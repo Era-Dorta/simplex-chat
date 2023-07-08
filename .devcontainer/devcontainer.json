@@ -1,0 +1,6 @@
+{  
+  "image": "ubuntu:focal",
+  "build.dockerfile": "Dockerfile",
+  "features": {
+  }
+}
