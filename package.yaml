@@ -98,6 +98,14 @@ executables:
     ghc-options:
       - -threaded
 
+  simplex-anonymous-broadcast-bot:
+    source-dirs: apps/simplex-anonymous-broadcast-bot
+    main: Main.hs
+    dependencies:
+      - simplex-chat
+    ghc-options:
+      - -threaded
+
 tests:
   simplex-chat-test:
     source-dirs: tests
