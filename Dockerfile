@@ -25,8 +25,8 @@ ENV PATH="/root/.cabal/bin:/root/.ghcup/bin:$PATH"
 RUN cp ./scripts/cabal.project.local.linux ./cabal.project.local
 
 # Compile simplex-chat
+RUN apt install pkg-config --no-install-recommends -y
 RUN cabal update
 RUN cabal install
 
-FROM scratch AS export-stage
-COPY --from=build /root/.cabal/bin/simplex-chat /
+CMD ["/root/.cabal/bin/simplex-chat/simplex-anonymous-broadcast-bot"]
