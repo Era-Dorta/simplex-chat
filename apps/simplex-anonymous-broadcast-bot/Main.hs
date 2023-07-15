@@ -52,7 +52,7 @@ broadcastBot BroadcastBotOpts {welcomeMessage} _user cc = do
               CRContactsList _ cts -> void . forkIO $ do
                 let cts' = filter broadcastTo cts
                 forM_ cts' $ \ct' -> sendComposedMessage cc ct' Nothing mc
-                sendReply $ "Forwarded to " <> show (length cts') <> " contact(s)"
+                sendReply $ "Your message was forwarded succesfully!"
               r -> putStrLn $ "Error getting contacts list: " <> show r
           else sendReply "!1 Message is not supported!"
         where
