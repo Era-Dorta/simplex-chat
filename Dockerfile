@@ -29,4 +29,4 @@ RUN apt install pkg-config --no-install-recommends -y
 RUN cabal update
 RUN cabal install
 
-CMD ["/root/.cabal/bin/simplex-chat/simplex-anonymous-broadcast-bot"]
+CMD ["/root/.cabal/bin/simplex-anonymous-broadcast-bot"]
