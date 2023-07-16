@@ -33,5 +33,10 @@ FROM ubuntu:focal
 COPY --from=build /root/.cabal/bin/simplex-anonymous-broadcast-bot /usr/bin/
 COPY --from=build /root/.cabal/bin/simplex-bot-advanced /usr/bin/
 
+RUN apt-get update \
+    && apt install -y libssl1.1 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Run the broadcast bot and the ping bot
-CMD ["/usr/bin/simplex-anonymous-broadcast-bot & /usr/bin/simplex-bot-advanced"]
+CMD ["/bin/bash", "-c", "/usr/bin/simplex-anonymous-broadcast-bot & /usr/bin/simplex-bot-advanced"]
