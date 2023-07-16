@@ -48,11 +48,14 @@ broadcastBot BroadcastBotOpts {welcomeMessage} _user cc = do
       CRNewChatItem _ (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc}) ->
         if allowContent mc
           then do
-            sendChatCmd cc "/contacts" >>= \case
+            if isPingMessage mc
+            then do
+              sendMessage cc ct "Bot is alive"
+            else sendChatCmd cc "/contacts" >>= \case
               CRContactsList _ cts -> void . forkIO $ do
-                let cts' = filter broadcastTo cts
-                forM_ cts' $ \ct' -> sendComposedMessage cc ct' Nothing mc
-                sendReply $ "Your message was forwarded succesfully!"
+                  let cts' = filter broadcastTo cts
+                  forM_ cts' $ \ct' -> sendComposedMessage cc ct' Nothing mc
+                  sendReply $ "Your message was forwarded successfully!"
               r -> putStrLn $ "Error getting contacts list: " <> show r
           else sendReply "!1 Message is not supported!"
         where
@@ -66,6 +69,8 @@ broadcastBot BroadcastBotOpts {welcomeMessage} _user cc = do
             (connStatus == ConnSndReady || connStatus == ConnReady)
               && not (connDisabled conn)
               && contactId' ct' /= contactId' ct
+          isPingMessage (MCText txt) = txt == "!ping"
+          isPingMessage _ = False
       _ -> pure ()
   where
     contactConnected ct = putStrLn $ T.unpack (localDisplayName' ct) <> " connected"
