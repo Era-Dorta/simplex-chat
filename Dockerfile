@@ -29,4 +29,5 @@ RUN cp ./scripts/cabal.project.local.linux ./cabal.project.local
 RUN cabal update
 RUN cabal install
 
-CMD ["/root/.cabal/bin/simplex-anonymous-broadcast-bot"]
+# Run the broadcast bot and the ping bot
+CMD ["/root/.cabal/bin/simplex-anonymous-broadcast-bot & /root/.cabal/bin/simplex-bot-advanced"]
