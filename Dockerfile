@@ -31,7 +31,7 @@ RUN cabal install
 
 FROM ubuntu:focal
 COPY --from=build /root/.cabal/bin/simplex-anonymous-broadcast-bot /usr/bin/
-COPY --from=build /root/.cabal/bin/simplex-advanced-bot /usr/bin/
+COPY --from=build /root/.cabal/bin/simplex-bot-advanced /usr/bin/
 
 # Run the broadcast bot and the ping bot
 CMD ["/usr/bin/simplex-anonymous-broadcast-bot & /usr/bin/simplex-bot-advanced"]
