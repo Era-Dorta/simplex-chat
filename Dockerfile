@@ -29,14 +29,19 @@ RUN cp ./scripts/cabal.project.local.linux ./cabal.project.local
 RUN cabal update
 RUN cabal install
 
+# Create a smaller run-time only stage, the previous one is about 5GB and this one is around 200Mb
 FROM ubuntu:focal
-COPY --from=build /root/.cabal/bin/simplex-anonymous-broadcast-bot /usr/bin/
-COPY --from=build /root/.cabal/bin/simplex-bot-advanced /usr/bin/
 
+# Install run-time dependencies
 RUN apt-get update \
     && apt install -y libssl1.1 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Get the binaries from the previous stage
+COPY --from=build /root/.cabal/bin/simplex-anonymous-broadcast-bot /usr/bin/
+COPY --from=build /root/.cabal/bin/simplex-bot-advanced /usr/bin/
+COPY --from=build /project/run_bots.sh /usr/bin/
+
 # Run the broadcast bot and the ping bot
-CMD ["/bin/bash", "-c", "/usr/bin/simplex-anonymous-broadcast-bot & /usr/bin/simplex-bot-advanced"]
+CMD ["/usr/bin/run_bots.sh"]
