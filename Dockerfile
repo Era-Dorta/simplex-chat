@@ -1,7 +1,7 @@
 FROM ubuntu:focal AS build
 
 # Install curl and simplex-chat-related dependencies
-RUN apt-get update && apt-get install -y curl git build-essential libgmp3-dev zlib1g-dev libssl-dev libnuma1
+RUN apt-get update && apt-get install -y curl git build-essential libgmp3-dev zlib1g-dev libssl-dev libnuma-dev
 RUN apt install pkg-config --no-install-recommends -y
 
 # Install ghcup
