@@ -2,7 +2,7 @@ FROM ubuntu:focal AS build
 
 # Install curl and simplex-chat-related dependencies
 RUN apt-get update && apt-get install -y curl git build-essential libgmp3-dev zlib1g-dev libssl-dev
-RUN apt install pkg-config --no-install-recommends -y
+RUN apt install pkg-config libnuma1 --no-install-recommends -y
 
 # Install ghcup
 RUN a=$(arch); curl https://downloads.haskell.org/~ghcup/$a-linux-ghcup -o /usr/bin/ghcup && \
