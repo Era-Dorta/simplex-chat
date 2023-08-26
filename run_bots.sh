@@ -2,6 +2,8 @@
 
 # Run the first bot in the background.
 # Without the redicted of stdin the bots crash trying to read from it.
+# Create logs, see link below for how to do it
+# https://superuser.com/a/993040
 /usr/bin/simplex-bot-advanced < "/dev/stdin" &
 
 # Same for the second bot

@@ -1,47 +1,38 @@
 FROM ubuntu:focal AS build
 
-# Install curl and simplex-chat-related dependencies
-RUN apt-get update && apt-get install -y curl git build-essential libgmp3-dev zlib1g-dev libssl-dev libnuma-dev
-RUN apt install pkg-config --no-install-recommends -y
+RUN mkdir -m 0755 /nix
 
-# Install ghcup
-RUN a=$(arch); curl https://downloads.haskell.org/~ghcup/$a-linux-ghcup -o /usr/bin/ghcup && \
-    chmod +x /usr/bin/ghcup
+ARG USERNAME=user
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
 
-# Install ghc
-RUN ghcup install ghc 8.10.7
-# Install cabal
-RUN ghcup install cabal
-# Set both as default
-RUN ghcup set ghc 8.10.7 && \
-    ghcup set cabal
+# Create the user
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && apt-get update \
+    && apt-get install -y sudo \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
 
-COPY . /project
-WORKDIR /project
+RUN chown user /nix
 
-# Adjust PATH
-ENV PATH="/root/.cabal/bin:/root/.ghcup/bin:$PATH"
+RUN apt-get update && apt-get install -y curl git build-essential
 
-# Adjust build
-RUN cp ./scripts/cabal.project.local.linux ./cabal.project.local
+USER $USERNAME
 
-# Compile simplex-chat
-RUN cabal update
-RUN cabal install
+RUN ls -a /home/user/
+RUN mkdir /home/user/.local && mkdir /home/user/.local/bin
 
-# Create a smaller run-time only stage, the previous one is about 5GB and this one is around 200Mb
-FROM ubuntu:focal
+RUN curl -L https://nixos.org/nix/install | sh -s -- --no-daemon
+RUN . /home/user/.nix-profile/etc/profile.d/nix.sh
+ENV PATH="/home/user/.nix-profile/bin:$PATH"
 
-# Install run-time dependencies
-RUN apt-get update \
-    && apt install -y libssl1.1 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+RUN nix-env -iA nixpkgs.niv && \
+    niv init && \
+    niv add input-output-hk/haskell.nix -n haskellNix
 
-# Get the binaries from the previous stage
-COPY --from=build /root/.cabal/bin/simplex-anonymous-broadcast-bot /usr/bin/
-COPY --from=build /root/.cabal/bin/simplex-bot-advanced /usr/bin/
-COPY --from=build /project/run_bots.sh /usr/bin/
+RUN mkdir $HOME/.config && mkdir $HOME/.config/nix
+RUN echo "trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= " > $HOME/.config/nix/nix.conf
+RUN echo "substituters = https://cache.nixos.org/ https://cache.iog.io " >> $HOME/.config/nix/nix.conf
 
-# Run the broadcast bot and the ping bot
-CMD ["/usr/bin/run_bots.sh"]
+WORKDIR /home/user/test
