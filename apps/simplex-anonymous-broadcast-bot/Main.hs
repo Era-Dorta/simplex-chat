@@ -16,7 +16,7 @@ import Simplex.Chat.Bot
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.ChatItemContent
+import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
@@ -51,7 +51,7 @@ broadcastBot BroadcastBotOpts {welcomeMessage} _user cc = do
             if isPingMessage mc
             then do
               sendMessage cc ct "Bot is alive"
-            else sendChatCmd cc "/contacts" >>= \case
+            else sendChatCmd cc ListContacts >>= \case
               CRContactsList _ cts -> void . forkIO $ do
                   let cts' = filter broadcastTo cts
                   forM_ cts' $ \ct' -> sendComposedMessage cc ct' Nothing mc
