@@ -1,0 +1,11 @@
+[Unit]
+Description=Simplex ping bot
+After=network.target
+
+[Service]
+ExecStart=/home/pi/.cabal/bin/simplex-bot-advanced
+Type=notify
+Restart=always
+
+[Install]
+WantedBy=graphical.target
