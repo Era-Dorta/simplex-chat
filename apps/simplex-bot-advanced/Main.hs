@@ -41,7 +41,7 @@ welcomeMessage = "Hello! I am ping bot. I will ping you every 24 hours"
 myPingBot :: User -> ChatController -> IO ()
 myPingBot _user cc = do
   initializeBotAddress cc
-  sendChatCmd cc "/contacts" >>= \case
+  sendChatCmd cc ListContacts >>= \case
     CRContactsList _ cts -> void . forkIO $ do
       void $ forkIO $ forever $ do -- Send ping to existing contacts
         threadDelay (24 * 60 * 60 * 1000000)  -- 24 hours delay
