@@ -190,13 +190,12 @@ struct UserAddressView: View {
 
     @ViewBuilder private func existingAddressView(_ userAddress: UserContactLink) -> some View {
         Section {
-            QRCode(uri: userAddress.connReqContact)
+            MutableQRCode(uri: Binding.constant(userAddress.connReqContact))
             shareQRCodeButton(userAddress)
             if MFMailComposeViewController.canSendMail() {
                 shareViaEmailButton(userAddress)
             }
-//            TODO uncomment in 5.2
-//            shareWithContactsButton()
+            shareWithContactsButton()
             autoAcceptToggle()
             learnMoreButton()
         } header: {
@@ -223,8 +222,7 @@ struct UserAddressView: View {
                     let connReqContact = try await apiCreateUserAddress()
                     DispatchQueue.main.async {
                         chatModel.userAddress = UserContactLink(connReqContact: connReqContact)
-//                        TODO uncomment in 5.2
-//                        alert = .shareOnCreate
+                        alert = .shareOnCreate
                         progressIndicator = false
                     }
                 } catch let error {

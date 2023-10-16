@@ -12,6 +12,7 @@ module Simplex.Chat.Terminal.Input where
 
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent (forkFinally, forkIO, killThread, mkWeakThreadId, threadDelay)
+import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
 import qualified Data.Attoparsec.ByteString.Char8 as A
@@ -25,17 +26,18 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Database.SQLite.Simple (Only (..))
-import qualified Database.SQLite.Simple as DB
+import qualified Database.SQLite.Simple as SQL
 import Database.SQLite.Simple.QQ (sql)
 import GHC.Weak (deRefWeak)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.ChatItemContent
+import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Output
 import Simplex.Chat.Types (User (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Util (catchAll_, safeDecodeUtf8, whenM)
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
@@ -299,7 +301,7 @@ updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s,
             getNameSfxs table pfx =
               getNameSfxs_ pfx (userId, pfx <> "%") $
                 "SELECT local_display_name FROM " <> table <> " WHERE user_id = ? AND local_display_name LIKE ?"
-            getNameSfxs_ :: DB.ToRow p => Text -> p -> DB.Query -> IO [String]
+            getNameSfxs_ :: SQL.ToRow p => Text -> p -> SQL.Query -> IO [String]
             getNameSfxs_ pfx ps q =
               withTransaction st (\db -> hasPfx pfx . map fromOnly <$> DB.query db q ps) `catchAll_` pure []
             commands =

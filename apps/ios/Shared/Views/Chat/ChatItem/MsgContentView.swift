@@ -80,14 +80,14 @@ struct MsgContentView: View {
     }
 
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
-        (rightToLeft ? Text("\n") : Text("   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, transparent: true)
+        (rightToLeft ? Text("\n") : Text("   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, transparent: true)
     }
 }
 
 func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false) -> Text {
     let s = text
     var res: Text
-    if let ft = formattedText, ft.count > 0 {
+    if let ft = formattedText, ft.count > 0 && ft.count <= 200 {
         res = formatText(ft[0], preview)
         var i = 1
         while i < ft.count {

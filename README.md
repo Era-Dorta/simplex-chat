@@ -2,7 +2,7 @@
 [![GitHub downloads](https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total)](https://github.com/simplex-chat/simplex-chat/releases)
 [![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
 [![Join on Reddit](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
-[![Follow on Mastodon](https://img.shields.io/mastodon/follow/108619463746856738?domain=https%3A%2F%2Fmastodon.social&style=social)](https://mastodon.social/@simplex)
+<a rel="me" href="https://mastodon.social/@simplex">![Follow on Mastodon](https://img.shields.io/mastodon/follow/108619463746856738?domain=https%3A%2F%2Fmastodon.social&style=social)</a>
 
 | 30/03/2023 | EN, [FR](/docs/lang/fr/README.md), [CZ](/docs/lang/cs/README.md) |
 
@@ -15,7 +15,7 @@
 ## Welcome to SimpleX Chat!
 
 1. 📲 [Install the app](#install-the-app).
-2. ↔️ [Connect to the team](#connect-to-the-team-via-the-app) and [join user groups](#join-user-groups).
+2. ↔️ [Connect to the team](#connect-to-the-team), [join user groups](#join-user-groups) and [follow our updates](#follow-our-updates).
 3. 🤝 [Make a private connection](#make-a-private-connection) with a friend.
 4. 🔤 [Help translating SimpleX Chat](#help-translating-simplex-chat).
 5. ⚡️ [Contribute](#contribute) and [help us with donations](#help-us-with-donations).
@@ -40,13 +40,21 @@
 - 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
 - 🖥 Available as a terminal (console) [app / CLI](#zap-quick-installation-of-a-terminal-app) on Linux, MacOS, Windows.
 
-## Connect to the team via the app
+## Connect to the team
+
+You can connect to the team via the app using "chat with the developers button" available when you have no conversations in the profile, "Send questions and ideas" in the app settings or via our [SimpleX address](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion). Please connect to:
 
 - to ask any questions
 - to suggest any improvements
 - to share anything relevant
 
+We are replying the questions manually, so it is not instant – it can take up to 24 hours.
+
+If you are interested in helping us to integrate open-source language models, and in [joining our team](./docs/JOIN_TEAM.md), please get in touch.
+
 ## Join user groups
+
+You can join the groups created by other users via the new [directory service](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion). We are not responsible for the content shared in these groups.
 
 **Please note**: The groups below are created for the users to be able to ask questions, make suggestions and ask questions about SimpleX Chat only.
 
@@ -54,7 +62,7 @@ You also can:
 - criticize the app, and make comparisons with other messengers.
 - share new messengers you think could be interesting for privacy, as long as you don't spam.
 - share some privacy related publications, infrequently.
-- having preliminary approved with the admin in direct message, share the link to a group you created.
+- having preliminary approved with the admin in direct message, share the link to a group you created, but only once. Once the group has more than 10 members it can be submitted to [SimpleX Directory Service](./docs/DIRECTORY.md) where the new users will be able to discover it.
 
 You must:
 - be polite to other users
@@ -79,6 +87,15 @@ There are groups in other languages, that we have the apps interface translated 
 
 You can join either by opening these links in the app or by opening them in a desktop browser and scanning the QR code.
 
+## Follow our updates
+
+We publish our updates and releases via:
+
+- [Reddit](https://www.reddit.com/r/SimpleXChat/), [Twitter](https://twitter.com/SimpleXChat), [Lemmy](https://lemmy.ml/c/simplex), [Mastodon](https://mastodon.social/@simplex) and [Nostr](https://snort.social/p/npub1exv22uulqnmlluszc4yk92jhs2e5ajcs6mu3t00a6avzjcalj9csm7d828).
+- SimpleX Chat [team profile](#connect-to-the-team).
+- [blog](https://simplex.chat/blog/) and [RSS feed](https://simplex.chat/feed.rss).
+- [mailing list](https://simplex.chat/#join-simplex), very rarely.
+
 ## Make a private connection
 
 You need to share a link with your friend or scan a QR code from their phone, in person or during a video call, to make a connection and start messaging.
@@ -102,17 +119,22 @@ Join our translators to help SimpleX grow!
 |locale|language |contributor|[Android](https://play.google.com/store/apps/details?id=chat.simplex.app) and [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084)|[website](https://simplex.chat)|Github docs|
 |:----:|:-------:|:---------:|:---------:|:---------:|:---------:|
 |🇬🇧 en|English   | |✓|✓|✓|✓|
-|ar|العربية   |[jermanuts](https://github.com/jermanuts)||[![website](https://hosted.weblate.org/widgets/simplex-chat/ar/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/ar/)||
+|ar|العربية   |[jermanuts](https://github.com/jermanuts)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/ar/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/ar/)<br>-|[![website](https://hosted.weblate.org/widgets/simplex-chat/ar/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/ar/)||
+|🇧🇬 bg|Български | |[![android app](https://hosted.weblate.org/widgets/simplex-chat/bg/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/bg/)<br>[![ios app](https://hosted.weblate.org/widget/simplex-chat/ios/bg/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/bg/)|||
 |🇨🇿 cs|Čeština   |[zen0bit](https://github.com/zen0bit)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/cs/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/cs/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/cs/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/cs/)|[![website](https://hosted.weblate.org/widgets/simplex-chat/cs/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/cs/)|[✓](https://github.com/simplex-chat/simplex-chat/tree/master/docs/lang/cs)|
 |🇩🇪 de|Deutsch   |[mlanp](https://github.com/mlanp)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/de/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/de/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/de/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/de/)|[![website](https://hosted.weblate.org/widgets/simplex-chat/de/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/de/)||
 |🇪🇸 es|Español   |[Mateyhv](https://github.com/Mateyhv)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/es/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/es/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/es/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/es/)|[![website](https://hosted.weblate.org/widgets/simplex-chat/es/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/es/)||
+|🇫🇮 fi|Suomi     | |[![android app](https://hosted.weblate.org/widgets/simplex-chat/fi/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/fi/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/fi/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/fi/)|[![website](https://hosted.weblate.org/widgets/simplex-chat/fi/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/fi/)||
 |🇫🇷 fr|Français  |[ishi_sama](https://github.com/ishi-sama)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/fr/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/fr/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/fr/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/fr/)|[![website](https://hosted.weblate.org/widgets/simplex-chat/fr/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/fr/)|[✓](https://github.com/simplex-chat/simplex-chat/tree/master/docs/lang/fr)|
+|🇮🇱 he|עִברִית     | |[![android app](https://hosted.weblate.org/widgets/simplex-chat/he/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/he/)<br>-|||
 |🇮🇹 it|Italiano  |[unbranched](https://github.com/unbranched)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/it/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/it/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/it/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/it/)|[![website](https://hosted.weblate.org/widgets/simplex-chat/it/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/it/)||
-|🇯🇵 ja|Japanese  ||[![android app](https://hosted.weblate.org/widgets/simplex-chat/it/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/ja/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/ja/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/ja/)|||
+|🇯🇵 ja|日本語     | |[![android app](https://hosted.weblate.org/widgets/simplex-chat/ja/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/ja/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/ja/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/ja/)|[![website](https://hosted.weblate.org/widgets/simplex-chat/ja/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/ja/)||
 |🇳🇱 nl|Nederlands|[mika-nl](https://github.com/mika-nl)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/nl/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/nl/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/nl/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/nl/)|[![website](https://hosted.weblate.org/widgets/simplex-chat/nl/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/nl/)||
-|🇵🇱 pl|Polski    |[BxOxSxS](https://github.com/BxOxSxS)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/pl/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/ru/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/ru/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/pl/)|||
+|🇵🇱 pl|Polski    |[BxOxSxS](https://github.com/BxOxSxS)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/pl/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/pl/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/pl/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/pl/)|||
 |🇧🇷 pt-BR|Português||[![android app](https://hosted.weblate.org/widgets/simplex-chat/pt_BR/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/pt_BR/)<br>-|[![website](https://hosted.weblate.org/widgets/simplex-chat/pt_BR/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/pt_BR/)||
 |🇷🇺 ru|Русский   ||[![android app](https://hosted.weblate.org/widgets/simplex-chat/ru/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/ru/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/ru/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/ru/)|||
+|🇹🇭 th|ภาษาไทย   |[titapa-punpun](https://github.com/titapa-punpun)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/th/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/th/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/th/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/th/)|||
+|🇺🇦 uk|Українська| |[![android app](https://hosted.weblate.org/widgets/simplex-chat/uk/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/uk/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/uk/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/uk/)|[![website](https://hosted.weblate.org/widgets/simplex-chat/uk/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/uk/)||
 |🇨🇳 zh-CHS|简体中文|[sith-on-mars](https://github.com/sith-on-mars)<br><br>[Float-hu](https://github.com/Float-hu)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/zh_Hans/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/zh_Hans/)<br>&nbsp;|<br><br>[![website](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/zh_Hans/)||
 
 Languages in progress: Arabic, Japanese, Korean, Portuguese and [others](https://hosted.weblate.org/projects/simplex-chat/#languages). We will be adding more languages as some of the already added are completed – please suggest new languages, review the [translation guide](./docs/TRANSLATIONS.md) and get in touch with us!
@@ -140,11 +162,14 @@ It is possible to donate via:
 
 - [GitHub](https://github.com/sponsors/simplex-chat) - it is commission-free for us.
 - [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in crypto-currencies.
-- Monero address: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
-- Bitcoin address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- BCH address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- Ethereum address: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
-- Solana address: 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
+- Monero: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
+- Bitcoin: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- BCH: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- USDT:
+  - BNB Smart Chain: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
+  - Tron: TNnTrKLBmdy2Wn3cAQR98dAVvWhLskQGfW
+- Ethereum: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
+- Solana: 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
 
 Thank you,
 
@@ -164,7 +189,7 @@ SimpleX Chat founder
 - [News and updates](#news-and-updates)
 - [Quick installation of a terminal app](#zap-quick-installation-of-a-terminal-app)
 - [SimpleX Platform design](#simplex-platform-design)
-- [Privacy: technical details and limitations](#privacy-technical-details-and-limitations)
+- [Privacy and security: technical details and limitations](#privacy-and-security-technical-details-and-limitations)
 - [For developers](#for-developers)
 - [Roadmap](#roadmap)
 - [Disclaimers, Security contact, License](#disclaimers)
@@ -205,21 +230,17 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 ## News and updates
 
-Recent updates:
+Recent and important updates:
+
+[Sep 25, 2023. SimpleX Chat v5.3 released: desktop app, local file encryption, improved groups and directory service](./blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.md).
+
+[Jul 22, 2023. SimpleX Chat: v5.2 released with message delivery receipts](./blog/20230722-simplex-chat-v5-2-message-delivery-receipts.md).
 
 [May 23, 2023. SimpleX Chat: v5.1 released with message reactions and self-destruct passcode](./blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.md).
 
 [Apr 22, 2023. SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb](./blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md).
 
-[Mar 28, 2023. v4.6 released - with Android 8+ and ARMv7a support, hidden profiles, community moderation, improved audio/video calls and reduced battery usage](./blog/20230328-simplex-chat-v4-6-hidden-profiles.md).
-
 [Mar 1, 2023. SimpleX File Transfer Protocol – send large files efficiently, privately and securely, soon to be integrated into SimpleX Chat apps.](./blog/20230301-simplex-file-transfer-protocol.md).
-
-[Feb 4, 2023. v4.5 released - with multiple user profiles, message draft, transport isolation and Italian interface](./blog/20230204-simplex-chat-v4-5-user-chat-profiles.md).
-
-[Jan 3, 2023. v4.4 released - with disappearing messages, "live" messages, connection security verifications, GIFs and stickers and with French interface language](./blog/20230103-simplex-chat-v4.4-disappearing-messages.md).
-
-[Dec 6, 2022. November reviews and v4.3 released - with instant voice messages, irreversible deletion of sent messages and improved server configuration](./blog/20221206-simplex-chat-v4.3-voice-messages.md).
 
 [Nov 8, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
@@ -253,7 +274,7 @@ See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/stable/p
 
 See [SimpleX Chat Protocol](./docs/protocol/simplex-chat.md) for the format of messages sent between chat clients over [SimpleX Messaging Protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md).
 
-## Privacy: technical details and limitations
+## Privacy and security: technical details and limitations
 
 SimpleX Chat is a work in progress – we are releasing improvements as they are ready. You have to decide if the current state is good enough for your usage scenario.
 
@@ -266,18 +287,23 @@ What is already implemented:
 3. [Double ratchet](./docs/GLOSSARY.md#double-ratchet-algorithm) end-to-end encryption in each conversation between two users (or group members). This is the same algorithm that is used in Signal and many other messaging apps; it provides OTR messaging with [forward secrecy](./docs/GLOSSARY.md#forward-secrecy) (each message is encrypted by its own ephemeral key) and [break-in recovery](./docs/GLOSSARY.md#post-compromise-security) (the keys are frequently re-negotiated as part of the message exchange). Two pairs of Curve448 keys are used for the initial [key agreement](./docs/GLOSSARY.md#key-agreement-protocol), initiating party passes these keys via the connection link, accepting side - in the header of the confirmation message.
 4. Additional layer of encryption using NaCL cryptobox for the messages delivered from the server to the recipient. This layer avoids having any ciphertext in common between sent and received traffic of the server inside TLS (and there are no identifiers in common as well).
 5. Several levels of [content padding](./docs/GLOSSARY.md#message-padding) to frustrate message size attacks.
-6. Starting from v2 of SMP protocol (the current version is v4) all message metadata, including the time when the message was received by the server (rounded to a second) is sent to the recipients inside an encrypted envelope, so even if TLS is compromised it cannot be observed.
+6. All message metadata, including the time when the message was received by the server (rounded to a second) is sent to the recipients inside an encrypted envelope, so even if TLS is compromised it cannot be observed.
 7. Only TLS 1.2/1.3 are allowed for client-server connections, limited to cryptographic algorithms: CHACHA20POLY1305_SHA256, Ed25519/Ed448, Curve25519/Curve448.
 8. To protect against replay attacks SimpleX servers require [tlsunique channel binding](https://www.rfc-editor.org/rfc/rfc5929.html) as session ID in each client command signed with per-queue ephemeral key.
 9. To protect your IP address all SimpleX Chat clients support accessing messaging servers via Tor - see [v3.1 release announcement](./blog/20220808-simplex-chat-v3.1-chat-groups.md) for more details.
 10. Local database encryption with passphrase - your contacts, groups and all sent and received messages are stored encrypted. If you used SimpleX Chat before v4.0 you need to enable the encryption via the app settings.
 11. Transport isolation - different TCP connections and Tor circuits are used for traffic of different user profiles, optionally - for different contacts and group member connections.
+12. Manual messaging queue rotations to move conversation to another SMP relay.
+13. Sending end-to-end encrypted files using [XFTP protocol](https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.html).
+14. Local files encryption, except videos (to be added later).
 
-We plan to add soon:
+We plan to add:
 
-1. Automatic message queue rotation. Currently the queues created between two users are used until the queue is manually changed by the user or contact is deleted. We are planning to add automatic queue rotation to make these identifiers temporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
-2. Local files encryption. Currently the images and files you send and receive are stored in the app unencrypted, you can delete them via `Settings / Database passphrase & export`.
-3. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
+1. Senders' SMP relays and recipients' XFTP relays to reduce traffic and conceal IP addresses from the relays chosen, and potentially controlled, by another party.
+2. Post-quantum resistant key exchange in double ratchet protocol.
+3. Automatic message queue rotation and redundancy. Currently the queues created between two users are used until the queue is manually changed by the user or contact is deleted. We are planning to add automatic queue rotation to make these identifiers temporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
+4. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
+5. Reproducible builds – this is the limitation of the development stack, but we will be investing into solving this problem. Users can still build all applications and services from the source code.
 
 ## For developers
 
@@ -337,23 +363,27 @@ Please also join [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A
 - ✅ Message reactions
 - ✅ Message editing history
 - ✅ Reduced battery and traffic usage in large groups.
-- 🏗 Desktop client.
-- 🏗 Message delivery confirmation (with sender opt-in or opt-out per contact, TBC).
+- ✅ Message delivery confirmation (with sender opt-out per contact).
+- ✅ Desktop client.
+- ✅ Encryption of local files stored in the app.
+- 🏗 Using mobile profiles from the desktop app.
+- Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
+- Post-quantum resistant key exchange in double ratchet protocol.
+- Large groups, communities and public channels.
+- Privacy & security slider - a simple way to set all settings at once.
+- Improve sending videos (including encryption of locally stored videos).
+- Improve experience for the new users.
 - SMP queue redundancy and rotation (manual is supported).
 - Include optional message into connection request sent via contact address.
-- Local app files encryption.
 - Improved navigation and search in the conversation (expand and scroll to quoted message, scroll to search results, etc.).
-- Large groups, communities and public channels.
 - Feeds/broadcasts.
 - Ephemeral/disappearing/OTR conversations with the existing contacts.
 - Privately share your location.
 - Web widgets for custom interactivity in the chats.
 - Programmable chat automations / rules (automatic replies/forward/deletion/sending, reminders, etc.).
-- Supporting the same profile on multiple devices.
 - Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
   - keep all your contacts and groups even if you lose the domain.
   - the server doesn't have information about your contacts and groups.
-- Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
 - High capacity multi-node SMP relays.
 
 ## Disclaimers

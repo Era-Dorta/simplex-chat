@@ -13,20 +13,24 @@ let GROUP_DEFAULT_APP_STATE = "appState"
 let GROUP_DEFAULT_DB_CONTAINER = "dbContainer"
 public let GROUP_DEFAULT_CHAT_LAST_START = "chatLastStart"
 let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
+public let GROUP_DEFAULT_NTF_ENABLE_LOCAL = "ntfEnableLocal"
+public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic"
 let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 public let GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE = "privacyTransferImagesInline" // no longer used
+public let GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES = "privacyEncryptLocalFiles"
 let GROUP_DEFAULT_NTF_BADGE_COUNT = "ntgBadgeCount"
 let GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS = "networkUseOnionHosts"
 let GROUP_DEFAULT_NETWORK_SESSION_MODE = "networkSessionMode"
 let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT = "networkTCPConnectTimeout"
 let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT = "networkTCPTimeout"
+let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB = "networkTCPTimeoutPerKb"
 let GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL = "networkSMPPingInterval"
 let GROUP_DEFAULT_NETWORK_SMP_PING_COUNT = "networkSMPPingCount"
 let GROUP_DEFAULT_NETWORK_ENABLE_KEEP_ALIVE = "networkEnableKeepAlive"
 let GROUP_DEFAULT_NETWORK_TCP_KEEP_IDLE = "networkTCPKeepIdle"
 let GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL = "networkTCPKeepIntvl"
 let GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT = "networkTCPKeepCnt"
-let GROUP_DEFAULT_INCOGNITO = "incognito"
+public let GROUP_DEFAULT_INCOGNITO = "incognito"
 let GROUP_DEFAULT_STORE_DB_PASSPHRASE = "storeDBPassphrase"
 let GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE = "initialRandomDBPassphrase"
 public let GROUP_DEFAULT_CONFIRM_DB_UPGRADES = "confirmDBUpgrades"
@@ -38,10 +42,13 @@ public let groupDefaults = UserDefaults(suiteName: APP_GROUP_NAME)!
 
 public func registerGroupDefaults() {
     groupDefaults.register(defaults: [
+        GROUP_DEFAULT_NTF_ENABLE_LOCAL: false,
+        GROUP_DEFAULT_NTF_ENABLE_PERIODIC: false,
         GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS: OnionHosts.no.rawValue,
         GROUP_DEFAULT_NETWORK_SESSION_MODE: TransportSessionMode.user.rawValue,
         GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT: NetCfg.defaults.tcpConnectTimeout,
         GROUP_DEFAULT_NETWORK_TCP_TIMEOUT: NetCfg.defaults.tcpTimeout,
+        GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB: NetCfg.defaults.tcpTimeoutPerKb,
         GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL: NetCfg.defaults.smpPingInterval,
         GROUP_DEFAULT_NETWORK_SMP_PING_COUNT: NetCfg.defaults.smpPingCount,
         GROUP_DEFAULT_NETWORK_ENABLE_KEEP_ALIVE: NetCfg.defaults.enableKeepAlive,
@@ -53,6 +60,7 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE: false,
         GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
         GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE: false,
+        GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES: true,
         GROUP_DEFAULT_CONFIRM_DB_UPGRADES: false,
         GROUP_DEFAULT_CALL_KIT_ENABLED: true,
     ])
@@ -70,6 +78,14 @@ public enum AppState: String {
         case .suspending: return true
         case .suspended: return true
         default: return false
+        }
+    }
+
+    public var canSuspend: Bool {
+        switch self {
+        case .active: true
+        case .bgRefresh: true
+        default: false
         }
     }
 }
@@ -101,9 +117,13 @@ public let ntfPreviewModeGroupDefault = EnumDefault<NotificationPreviewMode>(
 
 public let incognitoGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_INCOGNITO)
 
+public let ntfEnableLocalGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_ENABLE_LOCAL)
+
+public let ntfEnablePeriodicGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_ENABLE_PERIODIC)
+
 public let privacyAcceptImagesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES)
 
-public let privacyTransferImagesInlineGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE)
+public let privacyEncryptLocalFilesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES)
 
 public let ntfBadgeCountGroupDefault = IntDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_BADGE_COUNT)
 
@@ -209,6 +229,7 @@ public func getNetCfg() -> NetCfg {
     let sessionMode = networkSessionModeGroupDefault.get()
     let tcpConnectTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     let tcpTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
+    let tcpTimeoutPerKb = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)
     let smpPingInterval = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL)
     let smpPingCount = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_SMP_PING_COUNT)
     let enableKeepAlive = groupDefaults.bool(forKey: GROUP_DEFAULT_NETWORK_ENABLE_KEEP_ALIVE)
@@ -227,6 +248,7 @@ public func getNetCfg() -> NetCfg {
         sessionMode: sessionMode,
         tcpConnectTimeout: tcpConnectTimeout,
         tcpTimeout: tcpTimeout,
+        tcpTimeoutPerKb: tcpTimeoutPerKb,
         tcpKeepAlive: tcpKeepAlive,
         smpPingInterval: smpPingInterval,
         smpPingCount: smpPingCount,
@@ -239,6 +261,7 @@ public func setNetCfg(_ cfg: NetCfg) {
     networkSessionModeGroupDefault.set(cfg.sessionMode)
     groupDefaults.set(cfg.tcpConnectTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
+    groupDefaults.set(cfg.tcpTimeoutPerKb, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)
     groupDefaults.set(cfg.smpPingInterval, forKey: GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL)
     groupDefaults.set(cfg.smpPingCount, forKey: GROUP_DEFAULT_NETWORK_SMP_PING_COUNT)
     if let tcpKeepAlive = cfg.tcpKeepAlive {

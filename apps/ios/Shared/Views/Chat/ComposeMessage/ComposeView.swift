@@ -44,7 +44,6 @@ struct ComposeState {
     var contextItem: ComposeContextItem
     var voiceMessageRecordingState: VoiceMessageRecordingState
     var inProgress = false
-    var disabled = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
 
     init(
@@ -168,25 +167,23 @@ struct ComposeState {
 }
 
 func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
-    let chatItemPreview: ComposePreview
     switch chatItem.content.msgContent {
     case .text:
-        chatItemPreview = .noPreview
+        return .noPreview
     case let .link(_, preview: preview):
-        chatItemPreview = .linkPreview(linkPreview: preview)
+        return .linkPreview(linkPreview: preview)
     case let .image(_, image):
-        chatItemPreview = .mediaPreviews(mediaPreviews: [(image, nil)])
+        return .mediaPreviews(mediaPreviews: [(image, nil)])
     case let .video(_, image, _):
-        chatItemPreview = .mediaPreviews(mediaPreviews: [(image, nil)])
+        return .mediaPreviews(mediaPreviews: [(image, nil)])
     case let .voice(_, duration):
-        chatItemPreview = .voicePreview(recordingFileName: chatItem.file?.fileName ?? "", duration: duration)
+        return .voicePreview(recordingFileName: chatItem.file?.fileName ?? "", duration: duration)
     case .file:
         let fileName = chatItem.file?.fileName ?? ""
-        chatItemPreview = .filePreview(fileName: fileName, file: getAppFilePath(fileName))
+        return .filePreview(fileName: fileName, file: getAppFilePath(fileName))
     default:
-        chatItemPreview = .noPreview
+        return .noPreview
     }
-    return chatItemPreview
 }
 
 enum UploadContent: Equatable {
@@ -234,13 +231,14 @@ struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
-    @FocusState.Binding var keyboardVisible: Bool
+    @Binding var keyboardVisible: Bool
 
     @State var linkUrl: URL? = nil
     @State var prevLinkUrl: URL? = nil
     @State var pendingLinkUrl: URL? = nil
     @State var cancelledLinks: Set<String> = []
 
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showChooseSource = false
     @State private var showMediaPicker = false
     @State private var showTakePhoto = false
@@ -255,8 +253,13 @@ struct ComposeView: View {
     // this is a workaround to fire an explicit event in certain cases
     @State private var stopPlayback: Bool = false
 
+    @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
+
     var body: some View {
         VStack(spacing: 0) {
+            if chat.chatInfo.contact?.nextSendGrpInv ?? false {
+                ContextInvitingContactMemberView()
+            }
             contextItemView()
             switch (composeState.editing, composeState.preview) {
             case (true, .filePreview): EmptyView()
@@ -264,16 +267,27 @@ struct ComposeView: View {
             default: previewView()
             }
             HStack (alignment: .bottom) {
-                Button {
+                let b = Button {
                     showChooseSource = true
                 } label: {
                     Image(systemName: "paperclip")
                         .resizable()
                 }
-                .disabled(composeState.attachmentDisabled || !chat.userCanSend)
+                .disabled(composeState.attachmentDisabled || !chat.userCanSend || (chat.chatInfo.contact?.nextSendGrpInv ?? false))
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
+                if case let .group(g) = chat.chatInfo,
+                   !g.fullGroupPreferences.files.on {
+                    b.disabled(true).onTapGesture {
+                        AlertManager.shared.showAlertMsg(
+                            title: "Files and media prohibited!",
+                            message: "Only group owners can enable files and media."
+                        )
+                    }
+                } else {
+                    b
+                }
                 ZStack(alignment: .leading) {
                     SendMessageView(
                         composeState: $composeState,
@@ -287,6 +301,7 @@ struct ComposeView: View {
                             composeState.liveMessage = nil
                             chatModel.removeLiveDummy()
                         },
+                        nextSendGrpInv: chat.chatInfo.contact?.nextSendGrpInv ?? false,
                         voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
                         showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
                         startVoiceMessageRecording: {
@@ -296,11 +311,12 @@ struct ComposeView: View {
                         },
                         finishVoiceMessageRecording: finishVoiceMessageRecording,
                         allowVoiceMessagesToContact: allowVoiceMessagesToContact,
-                        // TODO in 5.2 - allow if ttl is not configured
-                        // timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
-                        timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages) && chat.chatInfo.timedMessagesTTL != nil,
+                        timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
                         onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
-                        keyboardVisible: $keyboardVisible
+                        keyboardVisible: $keyboardVisible,
+                        sendButtonColor: chat.chatInfo.incognito
+                            ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
+                            : .accentColor
                     )
                     .padding(.trailing, 12)
                     .background(.background)
@@ -433,7 +449,15 @@ struct ComposeView: View {
             } else if (composeState.inProgress) {
                 clearCurrentDraft()
             } else if !composeState.empty  {
-                saveCurrentDraft()
+                if case .recording = composeState.voiceMessageRecordingState {
+                    finishVoiceMessageRecording()
+                    if let fileName = composeState.voiceMessageRecordingFileName {
+                        chatModel.filesToDelete.insert(getAppFilePath(fileName))
+                    }
+                }
+                if saveLastDraft {
+                    saveCurrentDraft()
+                }
             } else {
                 cancelCurrentVoiceRecording()
                 clearCurrentDraft()
@@ -597,7 +621,9 @@ struct ComposeView: View {
             if liveMessage != nil { composeState = composeState.copy(liveMessage: nil) }
             await sending()
         }
-        if case let .editingItem(ci) = composeState.contextItem {
+        if chat.chatInfo.contact?.nextSendGrpInv ?? false {
+            await sendMemberContactInvitation()
+        } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
         } else if let liveMessage = liveMessage, liveMessage.sentMsg != nil {
             sent = await updateMessage(liveMessage.chatItem, live: live)
@@ -634,10 +660,10 @@ struct ComposeView: View {
                 }
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
-                chatModel.filesToDelete.remove(getAppFilePath(recordingFileName))
-                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: recordingFileName, ttl: ttl)
+                let file = voiceCryptoFile(recordingFileName)
+                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl)
             case let .filePreview(_, file):
-                if let savedFile = saveFileFromURL(file) {
+                if let savedFile = saveFileFromURL(file, encrypted: privacyEncryptLocalFilesGroupDefault.get()) {
                     sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl)
                 }
             }
@@ -646,9 +672,19 @@ struct ComposeView: View {
         return sent
 
         func sending() async {
-            await MainActor.run { composeState.disabled = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                if composeState.disabled { composeState.inProgress = true }
+            await MainActor.run { composeState.inProgress = true }
+        }
+
+        func sendMemberContactInvitation() async {
+            do {
+                let mc = checkLinkPreview()
+                let contact = try await apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
+                await MainActor.run {
+                    self.chatModel.updateContact(contact)
+                }
+            } catch {
+                logger.error("ChatView.sendMemberContactInvitation error: \(error.localizedDescription)")
+                AlertManager.shared.showAlertMsg(title: "Error sending member contact invitation", message: "Error: \(responseError(error))")
             }
         }
 
@@ -656,17 +692,21 @@ struct ComposeView: View {
             if let oldMsgContent = ei.content.msgContent {
                 do {
                     let mc = updateMsgContent(oldMsgContent)
-                    let chatItem = try await apiUpdateChatItem(
-                        type: chat.chatInfo.chatType,
-                        id: chat.chatInfo.apiId,
-                        itemId: ei.id,
-                        msg: mc,
-                        live: live
-                    )
-                    await MainActor.run {
-                        _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                    if mc != oldMsgContent || (ei.meta.itemLive ?? false) {
+                        let chatItem = try await apiUpdateChatItem(
+                            type: chat.chatInfo.chatType,
+                            id: chat.chatInfo.apiId,
+                            itemId: ei.id,
+                            msg: mc,
+                            live: live
+                        )
+                        await MainActor.run {
+                            _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                        }
+                        return chatItem
+                    } else {
+                        return nil
                     }
-                    return chatItem
                 } catch {
                     logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
                     AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
@@ -704,13 +744,28 @@ struct ComposeView: View {
 
         func sendVideo(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
             let (image, data) = imageData
-            if case let .video(_, url, duration) = data, let savedFile = saveFileFromURLWithoutLoad(url) {
+            if case let .video(_, url, duration) = data, let savedFile = moveTempFileFromURL(url) {
                 return await send(.video(text: text, image: image, duration: duration), quoted: quoted, file: savedFile, live: live, ttl: ttl)
             }
             return nil
         }
 
-        func send(_ mc: MsgContent, quoted: Int64?, file: String? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
+        func voiceCryptoFile(_ fileName: String) -> CryptoFile? {
+            if !privacyEncryptLocalFilesGroupDefault.get() {
+                return CryptoFile.plain(fileName)
+            }
+            let url = getAppFilePath(fileName)
+            let toFile = generateNewFileName("voice", "m4a")
+            let toUrl = getAppFilePath(toFile)
+            if let cfArgs = try? encryptCryptoFile(fromPath: url.path, toPath: toUrl.path) {
+                removeFile(url)
+                return CryptoFile(filePath: toFile, cryptoArgs: cfArgs)
+            } else {
+                return nil
+            }
+        }
+
+        func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
             if let chatItem = await apiSendMessage(
                 type: chat.chatInfo.chatType,
                 id: chat.chatInfo.apiId,
@@ -727,7 +782,7 @@ struct ComposeView: View {
                 return chatItem
             }
             if let file = file {
-                removeFile(file)
+                removeFile(file.filePath)
             }
             return nil
         }
@@ -747,7 +802,7 @@ struct ComposeView: View {
             }
         }
 
-        func saveAnyImage(_ img: UploadContent) -> String? {
+        func saveAnyImage(_ img: UploadContent) -> CryptoFile? {
             switch img {
             case let .simpleImage(image): return saveImage(image)
             case let .animatedImage(image): return saveAnimImage(image)
@@ -839,7 +894,6 @@ struct ComposeView: View {
 
     private func clearState(live: Bool = false) {
         if live {
-            composeState.disabled = false
             composeState.inProgress = false
         } else {
             composeState = ComposeState()
@@ -852,12 +906,6 @@ struct ComposeView: View {
     }
 
     private func saveCurrentDraft() {
-        if case .recording = composeState.voiceMessageRecordingState {
-            finishVoiceMessageRecording()
-            if let fileName = composeState.voiceMessageRecordingFileName {
-                chatModel.filesToDelete.insert(getAppFilePath(fileName))
-            }
-        }
         chatModel.draft = composeState
         chatModel.draftChatId = chat.id
     }
@@ -934,19 +982,18 @@ struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
         let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
         @State var composeState = ComposeState(message: "hello")
-        @FocusState var keyboardVisible: Bool
 
         return Group {
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: Binding.constant(true)
             )
             .environmentObject(ChatModel())
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: Binding.constant(true)
             )
             .environmentObject(ChatModel())
         }

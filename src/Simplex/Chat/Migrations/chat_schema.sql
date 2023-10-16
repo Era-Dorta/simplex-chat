@@ -31,7 +31,9 @@ CREATE TABLE users(
   agent_user_id INTEGER CHECK(agent_user_id NOT NULL),
   view_pwd_hash BLOB,
   view_pwd_salt BLOB,
-  show_ntfs INTEGER NOT NULL DEFAULT 1, -- 1 for active user
+  show_ntfs INTEGER NOT NULL DEFAULT 1,
+  send_rcpts_contacts INTEGER NOT NULL DEFAULT 0,
+  send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -63,40 +65,18 @@ CREATE TABLE contacts(
   contact_used INTEGER DEFAULT 0 CHECK(contact_used NOT NULL),
   user_preferences TEXT DEFAULT '{}' CHECK(user_preferences NOT NULL),
   chat_ts TEXT,
+  deleted INTEGER NOT NULL DEFAULT 0,
+  favorite INTEGER NOT NULL DEFAULT 0,
+  send_rcpts INTEGER,
+  contact_group_member_id INTEGER
+  REFERENCES group_members(group_member_id) ON DELETE SET NULL,
+  contact_grp_inv_sent INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
   ON UPDATE CASCADE,
   UNIQUE(user_id, local_display_name),
   UNIQUE(user_id, contact_profile_id)
-);
-CREATE TABLE sent_probes(
-  sent_probe_id INTEGER PRIMARY KEY,
-  contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE CASCADE,
-  probe BLOB NOT NULL,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL),
-  UNIQUE(user_id, probe)
-);
-CREATE TABLE sent_probe_hashes(
-  sent_probe_hash_id INTEGER PRIMARY KEY,
-  sent_probe_id INTEGER NOT NULL REFERENCES sent_probes ON DELETE CASCADE,
-  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE CASCADE,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL),
-  UNIQUE(sent_probe_id, contact_id)
-);
-CREATE TABLE received_probes(
-  received_probe_id INTEGER PRIMARY KEY,
-  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE CASCADE,
-  probe BLOB,
-  probe_hash BLOB NOT NULL,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE
-  ,
-  created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL)
 );
 CREATE TABLE known_servers(
   server_id INTEGER PRIMARY KEY,
@@ -134,7 +114,9 @@ CREATE TABLE groups(
   enable_ntfs INTEGER,
   host_conn_custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
-  chat_ts TEXT, -- received
+  chat_ts TEXT,
+  favorite INTEGER NOT NULL DEFAULT 0,
+  send_rcpts INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -197,7 +179,9 @@ CREATE TABLE files(
   agent_snd_file_id BLOB NULL,
   private_snd_file_descr TEXT NULL,
   agent_snd_file_deleted INTEGER DEFAULT 0 CHECK(agent_snd_file_deleted NOT NULL),
-  protocol TEXT NOT NULL DEFAULT 'smp'
+  protocol TEXT NOT NULL DEFAULT 'smp',
+  file_crypto_key BLOB,
+  file_crypto_nonce BLOB
 );
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -276,6 +260,9 @@ CREATE TABLE connections(
   security_code TEXT NULL,
   security_code_verified_at TEXT NULL,
   auth_err_counter INTEGER DEFAULT 0 CHECK(auth_err_counter NOT NULL),
+  peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
+  peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
+  to_subscribe INTEGER DEFAULT 0 NOT NULL,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -309,6 +296,8 @@ CREATE TABLE contact_requests(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   updated_at TEXT CHECK(updated_at NOT NULL),
   xcontact_id BLOB,
+  peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
+  peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE
@@ -478,6 +467,54 @@ CREATE TABLE chat_item_reactions(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
+CREATE TABLE chat_item_moderations(
+  chat_item_moderation_id INTEGER PRIMARY KEY,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  moderator_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  item_member_id BLOB NOT NULL,
+  shared_msg_id BLOB NOT NULL,
+  created_by_msg_id INTEGER REFERENCES messages(message_id) ON DELETE SET NULL,
+  moderated_at TEXT NOT NULL, -- broker_ts of creating message
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE group_snd_item_statuses(
+  group_snd_item_status_id INTEGER PRIMARY KEY,
+  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  group_snd_item_status TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS "sent_probes"(
+  sent_probe_id INTEGER PRIMARY KEY,
+  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
+  probe BLOB NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT CHECK(created_at NOT NULL),
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  UNIQUE(user_id, probe)
+);
+CREATE TABLE IF NOT EXISTS "sent_probe_hashes"(
+  sent_probe_hash_id INTEGER PRIMARY KEY,
+  sent_probe_id INTEGER NOT NULL REFERENCES "sent_probes" ON DELETE CASCADE,
+  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT CHECK(created_at NOT NULL),
+  updated_at TEXT CHECK(updated_at NOT NULL)
+);
+CREATE TABLE IF NOT EXISTS "received_probes"(
+  received_probe_id INTEGER PRIMARY KEY,
+  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
+  probe BLOB,
+  probe_hash BLOB NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT CHECK(created_at NOT NULL),
+  updated_at TEXT CHECK(updated_at NOT NULL)
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -522,7 +559,6 @@ CREATE UNIQUE INDEX idx_snd_files_last_inline_msg_delivery_id ON snd_files(
 CREATE INDEX idx_messages_connection_id ON messages(connection_id);
 CREATE INDEX idx_chat_items_group_member_id ON chat_items(group_member_id);
 CREATE INDEX idx_chat_items_contact_id ON chat_items(contact_id);
-CREATE INDEX idx_chat_items_timed_delete_at ON chat_items(timed_delete_at);
 CREATE INDEX idx_chat_items_item_status ON chat_items(item_status);
 CREATE INDEX idx_connections_group_member ON connections(
   user_id,
@@ -592,10 +628,6 @@ CREATE INDEX idx_pending_group_messages_group_member_id ON pending_group_message
 );
 CREATE INDEX idx_rcv_file_chunks_file_id ON rcv_file_chunks(file_id);
 CREATE INDEX idx_rcv_files_group_member_id ON rcv_files(group_member_id);
-CREATE INDEX idx_received_probes_user_id ON received_probes(user_id);
-CREATE INDEX idx_received_probes_contact_id ON received_probes(contact_id);
-CREATE INDEX idx_sent_probe_hashes_user_id ON sent_probe_hashes(user_id);
-CREATE INDEX idx_sent_probe_hashes_contact_id ON sent_probe_hashes(contact_id);
 CREATE INDEX idx_settings_user_id ON settings(user_id);
 CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON snd_file_chunks(
   file_id,
@@ -644,3 +676,58 @@ CREATE INDEX idx_messages_created_at ON messages(created_at);
 CREATE INDEX idx_chat_item_reactions_created_by_msg_id ON chat_item_reactions(
   created_by_msg_id
 );
+CREATE INDEX idx_chat_items_timed_delete_at ON chat_items(
+  user_id,
+  timed_delete_at
+);
+CREATE INDEX idx_group_members_group_id ON group_members(user_id, group_id);
+CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON msg_deliveries(
+  connection_id,
+  agent_ack_cmd_id
+);
+CREATE INDEX msg_delivery_events_msg_delivery_id ON msg_delivery_events(
+  msg_delivery_id
+);
+CREATE INDEX idx_chat_item_moderations_group_id ON chat_item_moderations(
+  group_id
+);
+CREATE INDEX idx_chat_item_moderations_moderator_member_id ON chat_item_moderations(
+  moderator_member_id
+);
+CREATE INDEX idx_chat_item_moderations_created_by_msg_id ON chat_item_moderations(
+  created_by_msg_id
+);
+CREATE INDEX idx_chat_item_moderations_group ON chat_item_moderations(
+  group_id,
+  item_member_id,
+  shared_msg_id
+);
+CREATE INDEX idx_group_snd_item_statuses_chat_item_id ON group_snd_item_statuses(
+  chat_item_id
+);
+CREATE INDEX idx_group_snd_item_statuses_group_member_id ON group_snd_item_statuses(
+  group_member_id
+);
+CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
+  user_id,
+  item_status
+);
+CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
+CREATE INDEX idx_contacts_contact_group_member_id ON contacts(
+  contact_group_member_id
+);
+CREATE INDEX idx_sent_probes_user_id ON sent_probes(user_id);
+CREATE INDEX idx_sent_probes_contact_id ON sent_probes(contact_id);
+CREATE INDEX idx_sent_probes_group_member_id ON sent_probes(group_member_id);
+CREATE INDEX idx_sent_probe_hashes_user_id ON sent_probe_hashes(user_id);
+CREATE INDEX idx_sent_probe_hashes_sent_probe_id ON sent_probe_hashes(
+  sent_probe_id
+);
+CREATE INDEX idx_sent_probe_hashes_contact_id ON sent_probe_hashes(contact_id);
+CREATE INDEX idx_sent_probe_hashes_group_member_id ON sent_probe_hashes(
+  group_member_id
+);
+CREATE INDEX idx_received_probes_user_id ON received_probes(user_id);
+CREATE INDEX idx_received_probes_contact_id ON received_probes(contact_id);
+CREATE INDEX idx_received_probes_probe ON received_probes(probe);
+CREATE INDEX idx_received_probes_probe_hash ON received_probes(probe_hash);

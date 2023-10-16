@@ -6,12 +6,15 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
 
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
+
 module ChatClient where
 
 import Control.Concurrent (forkIOWithUnmask, killThread, threadDelay)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
+import Control.Monad
 import Control.Monad.Except
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
@@ -23,6 +26,7 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDataba
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Store
+import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types (AgentUserId (..), Profile, User (..))
@@ -36,6 +40,7 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
+import Simplex.Messaging.Transport.Server (defaultTransportServerConfig)
 import Simplex.Messaging.Version
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import System.FilePath ((</>))
@@ -74,6 +79,7 @@ testOpts =
       optFilesFolder = Nothing,
       showReactions = True,
       allowInstantFiles = True,
+      autoAcceptFileSize = 0,
       muteNotifications = True,
       maintenance = False
     }
@@ -113,6 +119,7 @@ testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
     { agentConfig = testAgentCfg,
+      showReceipts = False,
       testView = True,
       tbqSize = 16,
       xftpFileConfig = Nothing
@@ -123,11 +130,21 @@ testAgentCfgV1 =
   testAgentCfg
     { smpClientVRange = mkVersionRange 1 1,
       smpAgentVRange = mkVersionRange 1 1,
-      smpCfg = (smpCfg testAgentCfg) {smpServerVRange = mkVersionRange 1 1}
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange 1 1}
     }
 
 testCfgV1 :: ChatConfig
 testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
+
+testCfgCreateGroupDirect :: ChatConfig
+testCfgCreateGroupDirect =
+  mkCfgCreateGroupDirect testCfg
+
+mkCfgCreateGroupDirect :: ChatConfig -> ChatConfig
+mkCfgCreateGroupDirect cfg = cfg {chatVRange = groupCreateDirectVRange}
+
+groupCreateDirectVRange :: VersionRange
+groupCreateDirectVRange = mkVersionRange 1 1
 
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
@@ -193,6 +210,8 @@ withTestChatOpts tmp = withTestChatCfgOpts tmp testCfg
 withTestChatCfgOpts :: HasCallStack => FilePath -> ChatConfig -> ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatCfgOpts tmp cfg opts dbPrefix = bracket (startTestChat tmp cfg opts dbPrefix) (\cc -> cc <// 100000 >> stopTestChat cc)
 
+-- enable output for specific chat controller, use like this:
+-- withNewTestChat tmp "alice" aliceProfile $ \a -> withTestOutput a $ \alice -> do ...
 withTestOutput :: HasCallStack => TestCC -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestOutput cc runTest = runTest cc {printOutput = True}
 
@@ -245,6 +264,7 @@ getTermLine cc =
     Just s -> do
       -- remove condition to always echo virtual terminal
       when (printOutput cc) $ do
+      -- when True $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
@@ -265,7 +285,7 @@ testChatOpts2 = testChatCfgOpts2 testCfg
 testChatCfgOpts2 :: HasCallStack => ChatConfig -> ChatOpts -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChatCfgOpts2 cfg opts p1 p2 test = testChatN cfg opts [p1, p2] test_
   where
-    test_ :: [TestCC] -> IO ()
+    test_ :: HasCallStack => [TestCC] -> IO ()
     test_ [tc1, tc2] = test tc1 tc2
     test_ _ = error "expected 2 chat clients"
 
@@ -278,14 +298,17 @@ testChatCfg3 cfg = testChatCfgOpts3 cfg testOpts
 testChatCfgOpts3 :: HasCallStack => ChatConfig -> ChatOpts -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChatCfgOpts3 cfg opts p1 p2 p3 test = testChatN cfg opts [p1, p2, p3] test_
   where
-    test_ :: [TestCC] -> IO ()
+    test_ :: HasCallStack => [TestCC] -> IO ()
     test_ [tc1, tc2, tc3] = test tc1 tc2 tc3
     test_ _ = error "expected 3 chat clients"
 
 testChat4 :: HasCallStack => Profile -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
-testChat4 p1 p2 p3 p4 test = testChatN testCfg testOpts [p1, p2, p3, p4] test_
+testChat4 = testChatCfg4 testCfg
+
+testChatCfg4 :: HasCallStack => ChatConfig -> Profile -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
+testChatCfg4 cfg p1 p2 p3 p4 test = testChatN cfg testOpts [p1, p2, p3, p4] test_
   where
-    test_ :: [TestCC] -> IO ()
+    test_ :: HasCallStack => [TestCC] -> IO ()
     test_ [tc1, tc2, tc3, tc4] = test tc1 tc2 tc3 tc4
     test_ _ = error "expected 4 chat clients"
 
@@ -297,7 +320,7 @@ serverCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS)],
       tbqSize = 1,
-      serverTbqSize = 1,
+      -- serverTbqSize = 1,
       msgQueueQuota = 16,
       queueIdBytes = 12,
       msgIdBytes = 6,
@@ -316,7 +339,8 @@ serverCfg =
       serverStatsLogFile = "tests/smp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       smpServerVRange = supportedSMPServerVRange,
-      logTLSErrors = True
+      transportConfig = defaultTransportServerConfig,
+      controlPort = Nothing
     }
 
 withSmpServer :: IO () -> IO ()
@@ -347,7 +371,7 @@ xftpServerConfig =
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
-      logTLSErrors = True
+      transportConfig = defaultTransportServerConfig
     }
 
 withXFTPServer :: IO () -> IO ()
