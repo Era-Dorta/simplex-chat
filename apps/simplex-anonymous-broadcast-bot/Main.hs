@@ -9,7 +9,7 @@ module Main where
 import Control.Concurrent (forkIO)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
-import Control.Monad.Reader
+import Control.Monad
 import qualified Data.Text as T
 import Options
 import Simplex.Chat.Bot
