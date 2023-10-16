@@ -27,7 +27,7 @@ RUN cp ./scripts/cabal.project.local.linux ./cabal.project.local
 
 # Compile simplex-chat
 RUN cabal update
-RUN cabal install
+RUN cabal install --overwrite-policy=always
 
 # Create a smaller run-time only stage, the previous one is about 5GB and this one is around 200Mb
 FROM ubuntu:focal
