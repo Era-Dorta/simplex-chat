@@ -1,11 +1,32 @@
 [Unit]
 Description=Simplex ping bot
-After=network.target
+After=multi-user.target
 
 [Service]
+Type=exec
 ExecStart=/home/pi/.cabal/bin/simplex-bot-advanced
-Type=notify
 Restart=always
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+TTYPath=/dev/tty11
+User=pi
+Group=pi
 
 [Install]
-WantedBy=graphical.target
+WantedBy=multi-user.target
+
+# Visualise the journal by running
+# journalctl -u simplex-ping-bot.service
+
+# The service was added to the system services by running
+# cd /etc/systemd/system/
+# ln -sn /etc/systemd/system/ /home/pi/simplex-chat/simplex-ping-bot.service
+
+# The service can be added and enabled with (enabling makes it start boot)
+# sudo systemctl daemon-reload && sudo systemctl enable simplex-ping-bot.service
+
+# Start the service inmediately for testing with
+# sudo systemctl start simplex-ping-bot.service
+
+# Root permissions are needed to allocate the tty for the input

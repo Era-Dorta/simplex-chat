@@ -1,11 +1,26 @@
-[Unit]
-Description=Simplex broadcast bot
-After=network.target
-
 [Service]
+Type=exec
 ExecStart=/home/pi/.cabal/bin/simplex-anonymous-broadcast-bot
-Type=notify
 Restart=always
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+TTYPath=/dev/tty12
+User=pi
+Group=pi
 
 [Install]
-WantedBy=graphical.target
+WantedBy=multi-user.target
+
+# Visualise the journal by running
+# journalctl -u simplex-broadcast-bot.service
+
+# The service was added to the system services by running
+# cd /etc/systemd/system/
+# ln -sn /etc/systemd/system/ /home/pi/simplex-chat/simplex-broadcast-bot.service
+
+# The service can be added and enabled with (enabling makes it start boot)
+# sudo systemctl daemon-reload && sudo systemctl enable simplex-broadcast-bot.service
+
+# Start the service inmediately for testing with
+# sudo systemctl start simplex-broadcast-bot.service
