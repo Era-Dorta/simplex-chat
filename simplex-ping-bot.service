@@ -21,7 +21,7 @@ WantedBy=multi-user.target
 
 # The service was added to the system services by running
 # cd /etc/systemd/system/
-# ln -sn /etc/systemd/system/ /home/pi/simplex-chat/simplex-ping-bot.service
+# sudo ln -sn /home/pi/simplex-chat/simplex-ping-bot.service ./
 
 # The service can be added and enabled with (enabling makes it start boot)
 # sudo systemctl daemon-reload && sudo systemctl enable simplex-ping-bot.service
