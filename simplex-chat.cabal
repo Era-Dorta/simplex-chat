@@ -460,6 +460,18 @@ executable simplex-anonymous-broadcast-bot
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
+  if impl(ghc >= 9.6.2)
+    build-depends:
+        bytestring ==0.11.*
+      , process ==1.6.*
+      , template-haskell ==2.20.*
+      , text >=2.0.1 && <2.2
+  if impl(ghc < 9.6.2)
+    build-depends:
+        bytestring ==0.10.*
+      , process >=1.6 && <1.6.18
+      , template-haskell ==2.16.*
+      , text >=1.2.3.0 && <1.3
 
 executable simplex-chat
   main-is: Main.hs
