@@ -16,32 +16,34 @@ RUN ghcup install cabal 3.10.1.0
 RUN ghcup set ghc 9.6.3 && \
     ghcup set cabal 3.10.1.0
 
-COPY . /project
-WORKDIR /project
+# COPY . /project
+# WORKDIR /project
 
 # Adjust PATH
 ENV PATH="/root/.cabal/bin:/root/.ghcup/bin:$PATH"
 
-# Adjust build
-RUN cp ./scripts/cabal.project.local.linux ./cabal.project.local
+# # Adjust build
+# RUN cp ./scripts/cabal.project.local.linux ./cabal.project.local
 
-# Compile simplex-chat
-RUN cabal update
-RUN cabal install --overwrite-policy=always
+# # Compile simplex-chat
+# RUN cabal update
+# RUN cabal install --overwrite-policy=always
 
-# Create a smaller run-time only stage, the previous one is about 5GB and this one is around 200Mb
-FROM ubuntu:focal
+# # Create a smaller run-time only stage, the previous one is about 5GB and this one is around 200Mb
+# FROM ubuntu:focal
 
-# Install run-time dependencies
-RUN apt-get update \
-    && apt install -y libssl1.1 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# # Install run-time dependencies
+# RUN apt-get update \
+#     && apt install -y libssl1.1 \
+#     && apt-get clean \
+#     && rm -rf /var/lib/apt/lists/*
 
-# Get the binaries from the previous stage
-COPY --from=build /root/.cabal/bin/simplex-anonymous-broadcast-bot /usr/bin/
-COPY --from=build /root/.cabal/bin/simplex-bot-advanced /usr/bin/
-COPY --from=build /project/run_bots.sh /usr/bin/
+# # Get the binaries from the previous stage
+# COPY --from=build /root/.cabal/bin/simplex-anonymous-broadcast-bot /usr/bin/
+# COPY --from=build /root/.cabal/bin/simplex-bot-advanced /usr/bin/
+# COPY --from=build /project/run_bots.sh /usr/bin/
 
-# Run the broadcast bot and the ping bot
-CMD ["/usr/bin/run_bots.sh"]
+# # Run the broadcast bot and the ping bot
+# CMD ["/usr/bin/run_bots.sh"]
+
+WORKDIR /project
