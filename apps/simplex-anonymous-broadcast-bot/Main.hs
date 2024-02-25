@@ -26,7 +26,7 @@ import System.Directory (getAppUserDataDirectory)
 main :: IO ()
 main = do
   opts <- welcomeGetOpts
-  simplexChatCore terminalChatConfig (mkChatOpts opts) Nothing $ broadcastBot opts
+  simplexChatCore terminalChatConfig (mkChatOpts opts) $ broadcastBot opts
 
 welcomeGetOpts :: IO BroadcastBotOpts
 welcomeGetOpts = do
@@ -40,7 +40,7 @@ broadcastBot :: BroadcastBotOpts -> User -> ChatController -> IO ()
 broadcastBot BroadcastBotOpts {welcomeMessage} _user cc = do
   initializeBotAddress cc
   race_ (forever $ void getLine) . forever $ do
-    (_, resp) <- atomically . readTBQueue $ outputQ cc
+    (_, _, resp) <- atomically . readTBQueue $ outputQ cc
     case resp of
       CRContactConnected _ ct _ -> do
         contactConnected ct
@@ -65,7 +65,8 @@ broadcastBot BroadcastBotOpts {welcomeMessage} _user cc = do
             MCLink {} -> True
             MCImage {} -> True
             _ -> False
-          broadcastTo ct'@Contact {activeConn = conn@Connection {connStatus}} =
+          broadcastTo Contact {activeConn = Nothing} = False
+          broadcastTo ct'@Contact {activeConn = Just conn@Connection {connStatus}} =
             (connStatus == ConnSndReady || connStatus == ConnReady)
               && not (connDisabled conn)
               && contactId' ct' /= contactId' ct
