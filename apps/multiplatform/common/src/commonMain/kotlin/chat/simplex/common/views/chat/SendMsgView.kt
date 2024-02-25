@@ -29,6 +29,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
+import java.net.URI
 
 @Composable
 fun SendMsgView(
@@ -52,18 +53,11 @@ fun SendMsgView(
   updateLiveMessage: (suspend () -> Unit)? = null,
   cancelLiveMessage: (() -> Unit)? = null,
   editPrevMessage: () -> Unit,
+  onFilesPasted: (List<URI>) -> Unit,
   onMessageChange: (String) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
   val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
-
-  if (showCustomDisappearingMessageDialog.value) {
-    CustomDisappearingMessageDialog(
-      sendMessage = sendMessage,
-      setShowDialog = { showCustomDisappearingMessageDialog.value = it },
-      customDisappearingMessageTimePref = customDisappearingMessageTimePref
-    )
-  }
 
   Box(Modifier.padding(vertical = 8.dp)) {
     val cs = composeState.value
@@ -79,7 +73,10 @@ fun SendMsgView(
     val showVoiceButton = !nextSendGrpInv && cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
-    PlatformTextField(composeState, sendMsgEnabled, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage) {
+    val sendMsgButtonDisabled = !sendMsgEnabled || !cs.sendEnabled() ||
+      (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
+      cs.endLiveDisabled
+    PlatformTextField(composeState, sendMsgEnabled, sendMsgButtonDisabled, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage, onFilesPasted) {
       if (!cs.inProgress) {
         sendMessage(null)
       }
@@ -152,9 +149,6 @@ fun SendMsgView(
         else -> {
           val cs = composeState.value
           val icon = if (cs.editing || cs.liveMessage != null) painterResource(MR.images.ic_check_filled) else painterResource(MR.images.ic_arrow_upward)
-          val disabled = !sendMsgEnabled || !cs.sendEnabled() ||
-              (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
-              cs.endLiveDisabled
           val showDropdown = rememberSaveable { mutableStateOf(false) }
 
           @Composable
@@ -197,12 +191,17 @@ fun SendMsgView(
 
           val menuItems = MenuItems()
           if (menuItems.isNotEmpty()) {
-            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !disabled, sendMessage) { showDropdown.value = true }
+            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendMessage) { showDropdown.value = true }
             DefaultDropdownMenu(showDropdown) {
               menuItems.forEach { composable -> composable() }
             }
+            CustomDisappearingMessageDialog(
+              showCustomDisappearingMessageDialog,
+              sendMessage = sendMessage,
+              customDisappearingMessageTimePref = customDisappearingMessageTimePref
+            )
           } else {
-            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !disabled, sendMessage)
+            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendMessage)
           }
         }
       }
@@ -218,92 +217,43 @@ expect fun VoiceButtonWithoutPermissionByPlatform()
 
 @Composable
 private fun CustomDisappearingMessageDialog(
+  showMenu: MutableState<Boolean>,
   sendMessage: (Int?) -> Unit,
-  setShowDialog: (Boolean) -> Unit,
   customDisappearingMessageTimePref: SharedPreference<Int>?
 ) {
-  val showCustomTimePicker = remember { mutableStateOf(false) }
-
-  if (showCustomTimePicker.value) {
-    val selectedDisappearingMessageTime = remember {
-      mutableStateOf(customDisappearingMessageTimePref?.get?.invoke() ?: 300)
-    }
-    CustomTimePickerDialog(
-      selectedDisappearingMessageTime,
-      title = generalGetString(MR.strings.delete_after),
-      confirmButtonText = generalGetString(MR.strings.send_disappearing_message_send),
-      confirmButtonAction = { ttl ->
-        sendMessage(ttl)
-        customDisappearingMessageTimePref?.set?.invoke(ttl)
-        setShowDialog(false)
-      },
-      cancel = { setShowDialog(false) }
+  DefaultDropdownMenu(showMenu) {
+    Text(
+      generalGetString(MR.strings.send_disappearing_message),
+      Modifier.padding(vertical = DEFAULT_PADDING_HALF, horizontal = DEFAULT_PADDING * 1.5f),
+      fontSize = 16.sp,
+      color = MaterialTheme.colors.secondary
     )
-  } else {
-    @Composable
-    fun ChoiceButton(
-      text: String,
-      onClick: () -> Unit
-    ) {
-      TextButton(onClick) {
-        Text(
-          text,
-          fontSize = 18.sp,
-          color = MaterialTheme.colors.primary
-        )
-      }
-    }
 
-    DefaultDialog(onDismissRequest = { setShowDialog(false) }) {
-      Surface(
-        shape = RoundedCornerShape(corner = CornerSize(25.dp))
-      ) {
-        Box(
-          contentAlignment = Alignment.Center
-        ) {
-          Column(
-            modifier = Modifier.padding(DEFAULT_PADDING),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-          ) {
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Text(" ") // centers title
-              Text(
-                generalGetString(MR.strings.send_disappearing_message),
-                fontSize = 16.sp,
-                color = MaterialTheme.colors.secondary
-              )
-              Icon(
-                painterResource(MR.images.ic_close),
-                generalGetString(MR.strings.icon_descr_close_button),
-                tint = MaterialTheme.colors.secondary,
-                modifier = Modifier
-                  .size(25.dp)
-                  .clickable { setShowDialog(false) }
-              )
-            }
-            ChoiceButton(generalGetString(MR.strings.send_disappearing_message_30_seconds)) {
-              sendMessage(30)
-              setShowDialog(false)
-            }
-            ChoiceButton(generalGetString(MR.strings.send_disappearing_message_1_minute)) {
-              sendMessage(60)
-              setShowDialog(false)
-            }
-            ChoiceButton(generalGetString(MR.strings.send_disappearing_message_5_minutes)) {
-              sendMessage(300)
-              setShowDialog(false)
-            }
-            ChoiceButton(generalGetString(MR.strings.send_disappearing_message_custom_time)) {
-              showCustomTimePicker.value = true
-            }
-          }
-        }
-      }
+    ItemAction(generalGetString(MR.strings.send_disappearing_message_30_seconds)) {
+      sendMessage(30)
+      showMenu.value = false
+    }
+    ItemAction(generalGetString(MR.strings.send_disappearing_message_1_minute)) {
+      sendMessage(60)
+      showMenu.value = false
+    }
+    ItemAction(generalGetString(MR.strings.send_disappearing_message_5_minutes)) {
+      sendMessage(300)
+      showMenu.value = false
+    }
+    ItemAction(generalGetString(MR.strings.send_disappearing_message_custom_time)) {
+      showMenu.value = false
+      val selectedDisappearingMessageTime = mutableStateOf(customDisappearingMessageTimePref?.get?.invoke() ?: 300)
+      showCustomTimePickerDialog(
+        selectedDisappearingMessageTime,
+        title = generalGetString(MR.strings.delete_after),
+        confirmButtonText = generalGetString(MR.strings.send_disappearing_message_send),
+        confirmButtonAction = { ttl ->
+          sendMessage(ttl)
+          customDisappearingMessageTimePref?.set?.invoke(ttl)
+        },
+        cancel = { showMenu.value = false }
+      )
     }
   }
 }
@@ -612,6 +562,7 @@ fun PreviewSendMsgView() {
       sendMessage = {},
       editPrevMessage = {},
       onMessageChange = { _ -> },
+      onFilesPasted = {},
       textStyle = textStyle
     )
   }
@@ -645,6 +596,7 @@ fun PreviewSendMsgViewEditing() {
       sendMessage = {},
       editPrevMessage = {},
       onMessageChange = { _ -> },
+      onFilesPasted = {},
       textStyle = textStyle
     )
   }
@@ -678,6 +630,7 @@ fun PreviewSendMsgViewInProgress() {
       sendMessage = {},
       editPrevMessage = {},
       onMessageChange = { _ -> },
+      onFilesPasted = {},
       textStyle = textStyle
     )
   }

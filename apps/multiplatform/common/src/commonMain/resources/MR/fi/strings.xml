@@ -171,7 +171,6 @@
     <string name="chat_archive_header">Arkisto</string>
     <string name="delete_chat_archive_question">Poista keskusteluarkisto\?</string>
     <string name="archive_created_on_ts">Luotu %1$s</string>
-    <string name="rcv_group_event_changed_your_role">%s:n rooli muutettu %s:ksi</string>
     <string name="rcv_group_event_group_deleted">poistettu ryhmä</string>
     <string name="group_member_status_connecting">yhdistää</string>
     <string name="group_member_status_accepted">yhdistäminen (hyväksytty)</string>
@@ -189,7 +188,6 @@
     <string name="allow_your_contacts_to_send_disappearing_messages">Salli kontaktiesi lähettää katoavia viestejä.</string>
     <string name="timed_messages">Katoavat viestit</string>
     <string name="icon_descr_context">Kontekstikuvake</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Skannaa QR-koodi</b>: muodostaaksesi yhteyden kontaktiisi, joka näyttää QR-koodin sinulle.]]></string>
     <string name="icon_descr_cancel_live_message">Peruuta live-viesti</string>
     <string name="configure_ICE_servers">Määritä ICE-palvelimet</string>
     <string name="add_address_to_your_profile">Lisää osoite profiiliisi, jotta kontaktisi voivat jakaa sen muiden kanssa. Profiilipäivitys lähetetään kontakteillesi.</string>
@@ -232,7 +230,6 @@
     <string name="clear_verb">Tyhjennä</string>
     <string name="clear_chat_button">Tyhjennä keskustelu</string>
     <string name="clear_chat_question">Tyhjennä keskustelu\?</string>
-    <string name="create_one_time_link">Luo kertaluonteinen kutsulinkki</string>
     <string name="app_version_name">Sovellusversio: v%s</string>
     <string name="callstatus_calling">soittaa…</string>
     <string name="delete_chat_profile">Poista keskusteluprofiili</string>
@@ -272,7 +269,6 @@
     <string name="icon_descr_server_status_disconnected">Katkaistu</string>
     <string name="back">Takaisin</string>
     <string name="connect_via_link_or_qr">Yhdistä linkillä / QR-koodilla</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Lisää uusi kontakti</b>: luo kertakäyttöinen QR-koodi kontaktille.]]></string>
     <string name="clear_chat_menu_action">Tyhjennä</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 työpöytä: skannaa esitetty QR-koodi sovelluksesta käyttämällä <b>Skannaa QR-koodi</b>.]]></string>
     <string name="delete_pending_connection__question">Poistetaanko odottava yhteys\?</string>
@@ -339,7 +335,6 @@
     <string name="share_text_disappears_at">Katoaa klo: %s</string>
     <string name="create_secret_group_title">Luo salainen ryhmä</string>
     <string name="chat_preferences_always">aina</string>
-    <string name="cant_delete_user_profile">Käyttäjäprofiilia ei voi poistaa!</string>
     <string name="allow_your_contacts_to_call">Salli kontaktiesi soittaa sinulle.</string>
     <string name="allow_your_contacts_irreversibly_delete">Salli kontaktiesi poistaa lähetetyt viestit peruuttamattomasti.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Salli kontaktiesi lähettää ääniviestejä.</string>
@@ -573,7 +568,6 @@
     <string name="group_invitation_expired">Vanhentunut ryhmäkutsu</string>
     <string name="rcv_group_event_member_added">kutsuttu %1$s</string>
     <string name="group_full_name_field">Ryhmän koko nimi:</string>
-    <string name="full_name_optional__prompt">Koko nimi (valinnainen)</string>
     <string name="italic_text">kursivoitu</string>
     <string name="keychain_error">Avainnipun virhe</string>
     <string name="icon_descr_edited">muokattu</string>
@@ -938,7 +932,6 @@
     <string name="group_invitation_tap_to_join">Liity napauttamalla</string>
     <string name="group_member_status_removed">poistettu</string>
     <string name="group_member_role_owner">omistaja</string>
-    <string name="no_spaces">Ei välilyöntejä!</string>
     <string name="callstatus_rejected">hylätty puhelu</string>
     <string name="show_call_on_lock_screen">Näytä</string>
     <string name="stop_file__action">Pysäytä tiedosto</string>
@@ -1143,8 +1136,6 @@
     <string name="theme_colors_section_title">TEEMAN VÄRIT</string>
     <string name="update_network_session_mode_question">Päivitä kuljetuksen eristystila\?</string>
     <string name="you_can_create_it_later">Voit luoda sen myöhemmin</string>
-    <string name="your_contacts_will_see_it">Kontaktisi SimpleX:ssä näkevät sen.
-\nVoit muuttaa sitä Asetuksista.</string>
     <string name="to_reveal_profile_enter_password">Voit paljastaa piilotetun profiilisi kirjoittamalla koko salasanan Keskusteluprofiilit-sivun hakukenttään.</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Emme tallenna mitään kontaktejasi tai viestejäsi (kun ne on toimitettu) palvelimille.</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Yksityisyyden suojaamiseksi kaikkien muiden alustojen käyttämien käyttäjätunnusten sijaan SimpleX käyttää viestijonojen tunnisteita, jotka ovat kaikille kontakteille erillisiä.</string>
@@ -1246,8 +1237,6 @@
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">muutit osoitteeksi %s</string>
     <string name="invite_prohibited_description">Yrität kutsua kontaktia, jonka kanssa olet jakanut inkognito-profiilin, ryhmään, jossa käytät pääprofiiliasi</string>
     <string name="group_welcome_title">Tervetuloviesti</string>
-    <string name="should_be_at_least_one_profile">Käyttäjäprofiileja tulee olla vähintään yksi.</string>
-    <string name="should_be_at_least_one_visible_profile">Näkyviä käyttäjäprofiileja tulee olla vähintään yksi.</string>
     <string name="incognito_info_share">Kun jaat inkognitoprofiilin jonkun kanssa, tätä profiilia käytetään ryhmissä, joihin tämä sinut kutsuu.</string>
     <string name="group_main_profile_sent">Keskusteluprofiilisi lähetetään ryhmän jäsenille</string>
     <string name="incognito_random_profile">Satunnainen profiilisi</string>
@@ -1389,4 +1378,9 @@
     <string name="settings_is_storing_in_clear_text">Tunnuslause on tallennettu asetuksiin selkokielisenä.</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b> Huomioi </b>: Viesti- ja tiedostovälittimet yhdistetään SOCKS-proxyn kautta. Puhelut ja linkin esikatselut käyttävät suoraa yhteyttä.]]></string>
     <string name="encrypt_local_files">Salaa paikalliset tiedostot</string>
+    <string name="rcv_group_event_open_chat">Avaa</string>
+    <string name="v5_3_new_desktop_app">Uusi työpöytäsovellus!</string>
+    <string name="v5_3_new_interface_languages">6 uutta käyttöliittymän kieltä</string>
+    <string name="v5_3_discover_join_groups">Löydä ryhmiä ja liity niihin</string>
+    <string name="v5_3_new_desktop_app_descr">Luo uusi profiili työpöytäsovelluksessa. 💻</string>
 </resources>

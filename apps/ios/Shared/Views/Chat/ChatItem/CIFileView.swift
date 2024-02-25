@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct CIFileView: View {
+    @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
     let file: CIFile?
     let edited: Bool
@@ -51,7 +52,7 @@ struct CIFileView: View {
     private var itemInteractive: Bool {
         if let file = file {
             switch (file.fileStatus) {
-            case .sndStored: return false
+            case .sndStored: return file.fileProtocol == .local
             case .sndTransfer: return false
             case .sndComplete: return false
             case .sndCancelled: return false
@@ -83,9 +84,8 @@ struct CIFileView: View {
                 if fileSizeValid() {
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, in Task")
-                        if let user = ChatModel.shared.currentUser {
-                            let encrypted = privacyEncryptLocalFilesGroupDefault.get()
-                            await receiveFile(user: user, fileId: file.fileId, encrypted: encrypted)
+                        if let user = m.currentUser {
+                            await receiveFile(user: user, fileId: file.fileId)
                         }
                     }
                 } else {
@@ -107,10 +107,16 @@ struct CIFileView: View {
                         title: "Waiting for file",
                         message: "File will be received when your contact is online, please wait or check later!"
                     )
+                case .local: ()
                 }
             case .rcvComplete:
                 logger.debug("CIFileView fileAction - in .rcvComplete")
                 if let fileSource = getLoadedFileSource(file) {
+                    saveCryptoFile(fileSource)
+                }
+            case .sndStored:
+                logger.debug("CIFileView fileAction - in .sndStored")
+                if file.fileProtocol == .local, let fileSource = getLoadedFileSource(file) {
                     saveCryptoFile(fileSource)
                 }
             default: break
@@ -125,11 +131,13 @@ struct CIFileView: View {
                 switch file.fileProtocol {
                 case .xftp: progressView()
                 case .smp: fileIcon("doc.fill")
+                case .local: fileIcon("doc.fill")
                 }
             case let .sndTransfer(sndProgress, sndTotal):
                 switch file.fileProtocol {
                 case .xftp: progressCircle(sndProgress, sndTotal)
                 case .smp: progressView()
+                case .local: EmptyView()
                 }
             case .sndComplete: fileIcon("doc.fill", innerIcon: "checkmark", innerIconSize: 10)
             case .sndCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
@@ -234,18 +242,17 @@ struct CIFileView_Previews: PreviewProvider {
             file: nil
         )
         Group {
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentFile, revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: fileChatItemWtFile, revealed: Binding.constant(false))
+            ChatItemView(chat: Chat.sampleData, chatItem: sentFile, revealed: Binding.constant(false))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(), revealed: Binding.constant(false))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation), revealed: Binding.constant(false))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted), revealed: Binding.constant(false))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), revealed: Binding.constant(false))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled), revealed: Binding.constant(false))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation), revealed: Binding.constant(false))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation), revealed: Binding.constant(false))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation), revealed: Binding.constant(false))
+            ChatItemView(chat: Chat.sampleData, chatItem: fileChatItemWtFile, revealed: Binding.constant(false))
         }
         .previewLayout(.fixed(width: 360, height: 360))
-        .environmentObject(Chat.sampleData)
     }
 }

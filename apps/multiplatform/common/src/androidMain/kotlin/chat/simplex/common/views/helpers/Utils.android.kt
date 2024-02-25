@@ -1,5 +1,7 @@
 package chat.simplex.common.views.helpers
 
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Typeface
@@ -11,6 +13,8 @@ import android.text.Spanned
 import android.text.SpannedString
 import android.text.style.*
 import android.util.Base64
+import android.view.WindowManager
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.*
@@ -23,7 +27,6 @@ import androidx.core.text.HtmlCompat
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import java.io.*
 import java.net.URI
@@ -41,6 +44,30 @@ fun Resources.getText(id: StringResource, vararg args: Any): CharSequence {
   val htmlResource = resource.toHtmlWithoutParagraphs()
   val formattedHtml = String.format(htmlResource, *escapedArgs)
   return HtmlCompat.fromHtml(formattedHtml, HtmlCompat.FROM_HTML_MODE_LEGACY)
+}
+
+fun keepScreenOn(on: Boolean) {
+  val window = mainActivity.get()?.window ?: return
+  Handler(Looper.getMainLooper()).post {
+    if (on) {
+      window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    } else {
+      window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+  }
+}
+
+@Composable
+actual fun SetupClipboardListener() {
+  DisposableEffect(Unit) {
+    val service = androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val listener = { chatModel.clipboardHasText.value = service.hasPrimaryClip() }
+    chatModel.clipboardHasText.value = service.hasPrimaryClip()
+    service.addPrimaryClipChangedListener(listener)
+    onDispose {
+      service.removePrimaryClipChangedListener(listener)
+    }
+  }
 }
 
 actual fun escapedHtmlToAnnotatedString(text: String, density: Density): AnnotatedString {
@@ -152,10 +179,10 @@ private fun spannableStringToAnnotatedString(
 }
 
 actual fun getAppFileUri(fileName: String): URI =
-  FileProvider.getUriForFile(androidAppContext, "$APPLICATION_ID.provider", File(getAppFilePath(fileName))).toURI()
+  FileProvider.getUriForFile(androidAppContext, "$APPLICATION_ID.provider", if (File(fileName).isAbsolute) File(fileName) else File(getAppFilePath(fileName))).toURI()
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
-actual fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
+actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
   val filePath = getLoadedFilePath(file)
   return if (filePath != null && file != null) {
     try {
@@ -233,17 +260,13 @@ actual fun getFileSize(uri: URI): Long? {
 
 actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitmap? {
   return if (Build.VERSION.SDK_INT >= 28) {
-    val source = ImageDecoder.createSource(androidAppContext.contentResolver, uri.toUri())
     try {
+      val source = ImageDecoder.createSource(androidAppContext.contentResolver, uri.toUri())
       ImageDecoder.decodeBitmap(source)
-    } catch (e: android.graphics.ImageDecoder.DecodeException) {
+    } catch (e: Exception) {
       Log.e(TAG, "Unable to decode the image: ${e.stackTraceToString()}")
-      if (withAlertOnException) {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.image_decoding_exception_title),
-          text = generalGetString(MR.strings.image_decoding_exception_desc)
-        )
-      }
+      if (withAlertOnException) showImageDecodingException()
+
       null
     }
   } else {
@@ -253,17 +276,13 @@ actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitma
 
 actual fun getBitmapFromByteArray(data: ByteArray, withAlertOnException: Boolean): ImageBitmap? {
   return if (Build.VERSION.SDK_INT >= 31) {
-    val source = ImageDecoder.createSource(data)
     try {
+      val source = ImageDecoder.createSource(data)
       ImageDecoder.decodeBitmap(source)
     } catch (e: android.graphics.ImageDecoder.DecodeException) {
       Log.e(TAG, "Unable to decode the image: ${e.stackTraceToString()}")
-      if (withAlertOnException) {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.image_decoding_exception_title),
-          text = generalGetString(MR.strings.image_decoding_exception_desc)
-        )
-      }
+      if (withAlertOnException) showImageDecodingException()
+
       null
     }
   } else {
@@ -273,17 +292,13 @@ actual fun getBitmapFromByteArray(data: ByteArray, withAlertOnException: Boolean
 
 actual fun getDrawableFromUri(uri: URI, withAlertOnException: Boolean): Any? {
   return if (Build.VERSION.SDK_INT >= 28) {
-    val source = ImageDecoder.createSource(androidAppContext.contentResolver, uri.toUri())
     try {
+      val source = ImageDecoder.createSource(androidAppContext.contentResolver, uri.toUri())
       ImageDecoder.decodeDrawable(source)
-    } catch (e: android.graphics.ImageDecoder.DecodeException) {
-      if (withAlertOnException) {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.image_decoding_exception_title),
-          text = generalGetString(MR.strings.image_decoding_exception_desc)
-        )
-      }
+    } catch (e: Exception) {
       Log.e(TAG, "Error while decoding drawable: ${e.stackTraceToString()}")
+      if (withAlertOnException) showImageDecodingException()
+
       null
     }
   } else {
@@ -295,7 +310,7 @@ actual suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
   return try {
     val ext = if (asPng) "png" else "jpg"
     tmpDir.mkdir()
-    return File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", ext)).apply {
+    return File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", ext, tmpDir)).apply {
       outputStream().use { out ->
         image.asAndroidBitmap().compress(if (asPng) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG, 85, out)
         out.flush()
@@ -304,23 +319,29 @@ actual suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
       ChatModel.filesToDelete.add(this)
     }
   } catch (e: Exception) {
-    Log.e(TAG, "Util.kt saveTempImageUncompressed error: ${e.message}")
+    Log.e(TAG, "Utils.android saveTempImageUncompressed error: ${e.message}")
     null
   }
 }
 
-actual suspend fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolean): VideoPlayerInterface.PreviewAndDuration {
-  val mmr = MediaMetadataRetriever()
-  mmr.setDataSource(androidAppContext, uri.toUri())
-  val durationMs = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
-  val image = when {
-    timestamp != null -> mmr.getFrameAtTime(timestamp * 1000, MediaMetadataRetriever.OPTION_CLOSEST)
-    random -> mmr.frameAtTime
-    else -> mmr.getFrameAtTime(0)
+actual suspend fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolean, withAlertOnException: Boolean): VideoPlayerInterface.PreviewAndDuration =
+  try {
+    val mmr = MediaMetadataRetriever()
+    mmr.setDataSource(androidAppContext, uri.toUri())
+    val durationMs = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
+    val image = when {
+      timestamp != null -> mmr.getFrameAtTime(timestamp * 1000, MediaMetadataRetriever.OPTION_CLOSEST)
+      random -> mmr.frameAtTime
+      else -> mmr.getFrameAtTime(0)
+    }
+    mmr.release()
+    VideoPlayerInterface.PreviewAndDuration(image?.asImageBitmap(), durationMs, timestamp ?: 0)
+  } catch (e: Exception) {
+    Log.e(TAG, "Utils.android getBitmapFromVideo error: ${e.message}")
+    if (withAlertOnException) showVideoDecodingException()
+
+    VideoPlayerInterface.PreviewAndDuration(null, 0, 0)
   }
-  mmr.release()
-  return VideoPlayerInterface.PreviewAndDuration(image?.asImageBitmap(), durationMs, timestamp ?: 0)
-}
 
 actual fun ByteArray.toBase64StringForPassphrase(): String = Base64.encodeToString(this, Base64.DEFAULT)
 

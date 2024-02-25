@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.onGloballyPositioned
+import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.helpers.*
@@ -32,7 +33,12 @@ interface ImageGalleryProvider {
 @Composable
 fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> Unit) {
   val provider = remember { imageProvider() }
-  val pagerState = rememberPagerState(provider.initialIndex)
+  val pagerState = rememberPagerState(
+    initialPage = provider.initialIndex,
+    initialPageOffsetFraction = 0f
+  ) {
+    provider.totalMediaSize.value
+  }
   val goBack = { provider.onDismiss(pagerState.currentPage); close() }
   BackHandler(onBack = goBack)
   // Pager doesn't ask previous page at initialization step who knows why. By not doing this, prev page is not checked and can be blank,
@@ -81,6 +87,8 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
                 provider.scrollToStart()
                 pagerState.scrollToPage(0)
               }
+              // Current media was deleted or moderated, close gallery
+              index -> close()
             }
           }
         }
@@ -129,16 +137,22 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
           FullScreenImageView(modifier, data, imageBitmap)
         } else if (media is ProviderMedia.Video) {
           val preview = remember(media.uri.path) { base64ToBitmap(media.preview) }
-          VideoView(modifier, media.uri, preview, index == settledCurrentPage, close)
-          DisposableEffect(Unit) {
-            onDispose { playersToRelease.add(media.uri) }
+          val uriDecrypted = remember(media.uri.path) { mutableStateOf(if (media.fileSource?.cryptoArgs == null) media.uri else media.fileSource.decryptedGet()) }
+          val decrypted = uriDecrypted.value
+          if (decrypted != null) {
+            VideoView(modifier, decrypted, preview, index == settledCurrentPage, close)
+            DisposableEffect(Unit) {
+              onDispose { playersToRelease.add(decrypted) }
+            }
+          } else if (media.fileSource != null) {
+            VideoViewEncrypted(uriDecrypted, media.fileSource, preview)
           }
         }
       }
     }
   }
   if (appPlatform.isAndroid) {
-    HorizontalPager(pageCount = remember { provider.totalMediaSize }.value, state = pagerState) { index -> Content(index) }
+    HorizontalPager(state = pagerState) { index -> Content(index) }
   } else {
     Content(pagerState.currentPage)
   }
@@ -146,6 +160,19 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
 
 @Composable
 expect fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap: ImageBitmap)
+
+@Composable
+private fun VideoViewEncrypted(uriUnencrypted: MutableState<URI?>, fileSource: CryptoFile, defaultPreview: ImageBitmap) {
+  LaunchedEffect(Unit) {
+    withBGApi {
+      uriUnencrypted.value = fileSource.decryptedGetOrCreate()
+    }
+  }
+  Box(contentAlignment = Alignment.Center) {
+    VideoPreviewImageViewFullScreen(defaultPreview, {}, {})
+    VideoDecryptionProgress {}
+  }
+}
 
 @Composable
 private fun VideoView(modifier: Modifier, uri: URI, defaultPreview: ImageBitmap, currentPage: Boolean, close: () -> Unit) {
@@ -158,12 +185,11 @@ private fun VideoView(modifier: Modifier, uri: URI, defaultPreview: ImageBitmap,
     player.stop()
   }
   LaunchedEffect(Unit) {
-    player.enableSound(true)
     snapshotFlow { isCurrentPage.value }
       .distinctUntilChanged()
       .collect {
-        // Do not autoplay on desktop because it needs workaround
-        if (it && appPlatform.isAndroid) play() else if (!it) stop()
+        if (it) play() else stop()
+        player.enableSound(true)
       }
   }
 

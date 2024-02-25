@@ -11,28 +11,38 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import Control.Monad (unless, when)
+import Control.Monad.Except (runExceptT)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
 import Data.List (isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
+import Database.SQLite.Simple (Only (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
 import Simplex.Chat.Protocol
+import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
-import Simplex.Messaging.Agent.Store.SQLite (withTransaction)
+import Simplex.FileTransfer.Client.Main (xftpClientCLI)
+import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
-import System.Environment (lookupEnv)
-import System.FilePath ((</>))
+import System.Environment (lookupEnv, withArgs)
+import System.IO.Silently (capture_)
 import System.Info (os)
-import Test.Hspec
+import Test.Hspec hiding (it)
+import qualified Test.Hspec as Hspec
+import UnliftIO (timeout)
 
 defaultPrefs :: Maybe Preferences
 defaultPrefs = Just $ toChatPrefs defaultChatPrefs
+
+aliceDesktopProfile :: Profile
+aliceDesktopProfile = Profile {displayName = "alice_desktop", fullName = "Alice Desktop", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
 aliceProfile :: Profile
 aliceProfile = Profile {displayName = "alice", fullName = "Alice", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
@@ -46,11 +56,17 @@ cathProfile = Profile {displayName = "cath", fullName = "Catherine", image = Not
 danProfile :: Profile
 danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
-xit' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
+it :: HasCallStack => String -> (FilePath -> Expectation) -> SpecWith (Arg (FilePath -> Expectation))
+it name test =
+  Hspec.it name $ \tmp -> timeout t (test tmp) >>= maybe (error "test timed out") pure
+  where
+    t = 90 * 1000000
+
+xit' :: HasCallStack => String -> (FilePath -> Expectation) -> SpecWith (Arg (FilePath -> Expectation))
 xit' = if os == "linux" then xit else it
 
 xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
-xit'' = ifCI xit it
+xit'' = ifCI xit Hspec.it
 
 xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
 xdescribe'' = ifCI xdescribe describe
@@ -62,43 +78,22 @@ ifCI xrun run d t = do
 
 versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
-  it "v2" $ testChat2 aliceProfile bobProfile runTest
+  it "current" $ testChat2 aliceProfile bobProfile runTest
+  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile runTest
+  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev runTest
+  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg runTest
   it "v1" $ testChatCfg2 testCfgV1 aliceProfile bobProfile runTest
   it "v1 to v2" $ runTestCfg2 testCfg testCfgV1 runTest
   it "v2 to v1" $ runTestCfg2 testCfgV1 testCfg runTest
 
--- versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
--- versionTestMatrix3 runTest = do
---   it "v2" $ testChat3 aliceProfile bobProfile cathProfile runTest
-
--- it "v1" $ testChatCfg3 testCfgV1 aliceProfile bobProfile cathProfile runTest
--- it "v1 to v2" $ runTestCfg3 testCfg testCfgV1 testCfgV1 runTest
--- it "v2+v1 to v2" $ runTestCfg3 testCfg testCfg testCfgV1 runTest
--- it "v2 to v1" $ runTestCfg3 testCfgV1 testCfg testCfg runTest
--- it "v2+v1 to v1" $ runTestCfg3 testCfgV1 testCfg testCfgV1 runTest
-
-inlineCfg :: Integer -> ChatConfig
-inlineCfg n = testCfg {inlineFiles = defaultInlineFilesConfig {sendChunks = 0, offerChunks = n, receiveChunks = n}}
-
-fileTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
-fileTestMatrix2 runTest = do
-  it "via connection" $ runTestCfg2 viaConn viaConn runTest
-  it "inline (accepting)" $ runTestCfg2 inline inline runTest
-  it "via connection (inline offered)" $ runTestCfg2 inline viaConn runTest
-  it "via connection (inline supported)" $ runTestCfg2 viaConn inline runTest
-  where
-    inline = inlineCfg 100
-    viaConn = inlineCfg 0
-
-fileTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
-fileTestMatrix3 runTest = do
-  it "via connection" $ runTestCfg3 viaConn viaConn viaConn runTest
-  it "inline" $ runTestCfg3 inline inline inline runTest
-  it "via connection (inline offered)" $ runTestCfg3 inline viaConn viaConn runTest
-  it "via connection (inline supported)" $ runTestCfg3 viaConn inline inline runTest
-  where
-    inline = inlineCfg 100
-    viaConn = inlineCfg 0
+versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
+versionTestMatrix3 runTest = do
+  it "current" $ testChat3 aliceProfile bobProfile cathProfile runTest
+  it "prev" $ testChatCfg3 testCfgVPrev aliceProfile bobProfile cathProfile runTest
+  it "prev to curr" $ runTestCfg3 testCfg testCfgVPrev testCfgVPrev runTest
+  it "curr+prev to curr" $ runTestCfg3 testCfg testCfg testCfgVPrev runTest
+  it "curr to prev" $ runTestCfg3 testCfgVPrev testCfg testCfg runTest
+  it "curr+prev to prev" $ runTestCfg3 testCfgVPrev testCfg testCfgVPrev runTest
 
 runTestCfg2 :: ChatConfig -> ChatConfig -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 runTestCfg2 aliceCfg bobCfg runTest tmp =
@@ -214,7 +209,8 @@ groupFeatures'' =
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: on"), Nothing, Nothing),
     ((0, "Voice messages: on"), Nothing, Nothing),
-    ((0, "Files and media: on"), Nothing, Nothing)
+    ((0, "Files and media: on"), Nothing, Nothing),
+    ((0, "Recent history: on"), Nothing, Nothing)
   ]
 
 itemId :: Int -> String
@@ -277,8 +273,17 @@ cc <##.. ls = do
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
 
-data ConsoleResponse = ConsoleString String | WithTime String | EndsWith String
-  deriving (Show)
+(/*) :: HasCallStack => TestCC -> String -> IO ()
+cc /* note = do
+  cc `send` ("/* " <> note)
+  (dropTime <$> getTermLine cc) `shouldReturn` ("* " <> note)
+
+data ConsoleResponse
+  = ConsoleString String
+  | WithTime String
+  | EndsWith String
+  | StartsWith String
+  | Predicate (String -> Bool)
 
 instance IsString ConsoleResponse where fromString = ConsoleString
 
@@ -287,7 +292,7 @@ getInAnyOrder :: HasCallStack => (String -> String) -> TestCC -> [ConsoleRespons
 getInAnyOrder _ _ [] = pure ()
 getInAnyOrder f cc ls = do
   line <- f <$> getTermLine cc
-  let rest = filter (not . expected line) ls
+  let rest = filterFirst (expected line) ls
   if length rest < length ls
     then getInAnyOrder f cc rest
     else error $ "unexpected output: " <> line
@@ -297,6 +302,13 @@ getInAnyOrder f cc ls = do
       ConsoleString s -> l == s
       WithTime s -> dropTime_ l == Just s
       EndsWith s -> s `isSuffixOf` l
+      StartsWith s -> s `isPrefixOf` l
+      Predicate p -> p l
+    filterFirst :: (a -> Bool) -> [a] -> [a]
+    filterFirst _ [] = []
+    filterFirst p (x : xs)
+      | p x = xs
+      | otherwise = x : filterFirst p xs
 
 (<###) :: HasCallStack => TestCC -> [ConsoleResponse] -> Expectation
 (<###) = getInAnyOrder id
@@ -315,6 +327,9 @@ cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 
 ($<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
 (cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine cc) `shouldReturn` line
+
+(^<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
+(cc, p) ^<# line = (dropTime . dropStrPrefix p <$> getTermLine cc) `shouldReturn` line
 
 (⩗) :: HasCallStack => TestCC -> String -> Expectation
 cc ⩗ line = (dropTime . dropReceipt <$> getTermLine cc) `shouldReturn` line
@@ -427,6 +442,29 @@ getContactProfiles cc = do
       profiles <- withTransaction (chatStore $ chatController cc) $ \db -> getUserContactProfiles db user
       pure $ map (\Profile {displayName} -> displayName) profiles
 
+withCCUser :: TestCC -> (User -> IO a) -> IO a
+withCCUser cc action = do
+  user_ <- readTVarIO (currentUser $ chatController cc)
+  case user_ of
+    Nothing -> error "no user"
+    Just user -> action user
+
+withCCTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
+withCCTransaction cc action =
+  withTransaction (chatStore $ chatController cc) $ \db -> action db
+
+createCCNoteFolder :: TestCC -> IO ()
+createCCNoteFolder cc =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT (createNoteFolder db user) >>= either (fail . show) pure
+
+getProfilePictureByName :: TestCC -> String -> IO (Maybe String)
+getProfilePictureByName cc displayName =
+  withTransaction (chatStore $ chatController cc) $ \db ->
+    maybeFirstRow fromOnly $
+      DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName)
+
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do
   cc ##> "/last_item_id"
@@ -435,7 +473,7 @@ lastItemId cc = do
 showActiveUser :: HasCallStack => TestCC -> String -> Expectation
 showActiveUser cc name = do
   cc <## ("user profile: " <> name)
-  cc <## "use /p <display name> [<full name>] to change it"
+  cc <## "use /p <display name> to change it"
   cc <## "(the updated profile will be sent to all your contacts)"
 
 connectUsers :: HasCallStack => TestCC -> TestCC -> IO ()
@@ -456,8 +494,11 @@ showName (TestCC ChatController {currentUser} _ _ _ _ _) = do
   pure . T.unpack $ localDisplayName <> optionalFullName localDisplayName fullName
 
 createGroup2 :: HasCallStack => String -> TestCC -> TestCC -> IO ()
-createGroup2 gName cc1 cc2 = do
-  connectUsers cc1 cc2
+createGroup2 gName cc1 cc2 = createGroup2' gName cc1 cc2 True
+
+createGroup2' :: HasCallStack => String -> TestCC -> TestCC -> Bool -> IO ()
+createGroup2' gName cc1 cc2 doConnectUsers = do
+  when doConnectUsers $ connectUsers cc1 cc2
   name2 <- userName cc2
   cc1 ##> ("/g " <> gName)
   cc1 <## ("group #" <> gName <> " is created")
@@ -488,6 +529,24 @@ createGroup3 gName cc1 cc2 cc3 = do
         cc2 <## ("#" <> gName <> ": new member " <> name3 <> " is connected")
     ]
 
+create2Groups3 :: HasCallStack => String -> String -> TestCC -> TestCC -> TestCC -> IO ()
+create2Groups3 gName1 gName2 cc1 cc2 cc3 = do
+  createGroup3 gName1 cc1 cc2 cc3
+  createGroup2' gName2 cc1 cc2 False
+  name1 <- userName cc1
+  name3 <- userName cc3
+  addMember gName2 cc1 cc3 GRAdmin
+  cc3 ##> ("/j " <> gName2)
+  concurrentlyN_
+    [ cc1 <## ("#" <> gName2 <> ": " <> name3 <> " joined the group"),
+      do
+        cc3 <## ("#" <> gName2 <> ": you joined the group")
+        cc3 <##. ("#" <> gName2 <> ": member "), -- "#gName2: member sName2 is connected"
+      do
+        cc2 <##. ("#" <> gName2 <> ": " <> name1 <> " added ") -- "#gName2: name1 added sName3 to the group (connecting...)"
+        cc2 <##. ("#" <> gName2 <> ": new member ") -- "#gName2: new member name3 is connected"
+    ]
+
 addMember :: HasCallStack => String -> TestCC -> TestCC -> GroupMemberRole -> IO ()
 addMember gName = fullAddMember gName ""
 
@@ -512,23 +571,20 @@ checkActionDeletesFile file action = do
   fileExistsAfter <- doesFileExist file
   fileExistsAfter `shouldBe` False
 
-startFileTransferWithDest' :: HasCallStack => TestCC -> TestCC -> String -> String -> Maybe String -> IO ()
-startFileTransferWithDest' cc1 cc2 fileName fileSize fileDest_ = do
-  name1 <- userName cc1
-  name2 <- userName cc2
-  cc1 #> ("/f @" <> name2 <> " ./tests/fixtures/" <> fileName)
-  cc1 <## "use /fc 1 to cancel sending"
-  cc2 <# (name1 <> "> sends file " <> fileName <> " (" <> fileSize <> ")")
-  cc2 <## "use /fr 1 [<dir>/ | <path>] to receive it"
-  cc2 ##> ("/fr 1" <> maybe "" (" " <>) fileDest_)
-  cc2 <## ("saving file 1 from " <> name1 <> " to " <> maybe id (</>) fileDest_ fileName)
-  concurrently_
-    (cc2 <## ("started receiving file 1 (" <> fileName <> ") from " <> name1))
-    (cc1 <## ("started sending file 1 (" <> fileName <> ") to " <> name2))
-
 currentChatVRangeInfo :: String
 currentChatVRangeInfo =
   "peer chat protocol version range: " <> vRangeStr supportedChatVRange
 
 vRangeStr :: VersionRange -> String
 vRangeStr (VersionRange minVer maxVer) = "(" <> show minVer <> ", " <> show maxVer <> ")"
+
+linkAnotherSchema :: String -> String
+linkAnotherSchema link
+  | "https://simplex.chat/" `isPrefixOf` link =
+      T.unpack $ T.replace "https://simplex.chat/" "simplex:/" $ T.pack link
+  | "simplex:/" `isPrefixOf` link =
+      T.unpack $ T.replace "simplex:/" "https://simplex.chat/" $ T.pack link
+  | otherwise = error "link starts with neither https://simplex.chat/ nor simplex:/"
+
+xftpCLI :: [String] -> IO [String]
+xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)

@@ -158,7 +158,8 @@ func imageHasAlpha(_ img: UIImage) -> Bool {
     return false
 }
 
-func saveFileFromURL(_ url: URL, encrypted: Bool) -> CryptoFile? {
+func saveFileFromURL(_ url: URL) -> CryptoFile? {
+    let encrypted = privacyEncryptLocalFilesGroupDefault.get()
     let savedFile: CryptoFile?
     if url.startAccessingSecurityScopedResource() {
         do {
@@ -185,28 +186,37 @@ func saveFileFromURL(_ url: URL, encrypted: Bool) -> CryptoFile? {
 
 func moveTempFileFromURL(_ url: URL) -> CryptoFile? {
     do {
+        let encrypted = privacyEncryptLocalFilesGroupDefault.get()
         let fileName = uniqueCombine(url.lastPathComponent)
-        try FileManager.default.moveItem(at: url, to: getAppFilePath(fileName))
+        let savedFile: CryptoFile?
+        if encrypted {
+            let cfArgs = try encryptCryptoFile(fromPath: url.path, toPath: getAppFilePath(fileName).path)
+            try FileManager.default.removeItem(atPath: url.path)
+            savedFile = CryptoFile(filePath: fileName, cryptoArgs: cfArgs)
+        } else {
+            try FileManager.default.moveItem(at: url, to: getAppFilePath(fileName))
+            savedFile = CryptoFile.plain(fileName)
+        }
         ChatModel.shared.filesToDelete.remove(url)
-        return CryptoFile.plain(fileName)
+        return savedFile
     } catch {
         logger.error("ImageUtils.moveTempFileFromURL error: \(error.localizedDescription)")
         return nil
     }
 }
 
-func generateNewFileName(_ prefix: String, _ ext: String) -> String {
-    uniqueCombine("\(prefix)_\(getTimestamp()).\(ext)")
+func generateNewFileName(_ prefix: String, _ ext: String, fullPath: Bool = false) -> String {
+    uniqueCombine("\(prefix)_\(getTimestamp()).\(ext)", fullPath: fullPath)
 }
 
-private func uniqueCombine(_ fileName: String) -> String {
+private func uniqueCombine(_ fileName: String, fullPath: Bool = false) -> String {
     func tryCombine(_ fileName: String, _ n: Int) -> String {
         let ns = fileName as NSString
         let name = ns.deletingPathExtension
         let ext = ns.pathExtension
         let suffix = (n == 0) ? "" : "_\(n)"
         let f = "\(name)\(suffix).\(ext)"
-        return (FileManager.default.fileExists(atPath: getAppFilePath(f).path)) ? tryCombine(fileName, n + 1) : f
+        return (FileManager.default.fileExists(atPath: fullPath ? f : getAppFilePath(f).path)) ? tryCombine(fileName, n + 1) : f
     }
     return tryCombine(fileName, 0)
 }

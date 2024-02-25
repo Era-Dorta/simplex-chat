@@ -211,7 +211,6 @@
     <string name="info_row_group">Grupo</string>
     <string name="icon_descr_audio_on">Áudio ligado</string>
     <string name="authentication_cancelled">Autenticação cancelada</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b> Adicionar novo contato</b>: para criar o seu código QR de utilização única para o seu contato.]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> Bom para a bateria </b>. O serviço em segundo plano verifica se há mensagens a cada 10 minutos. Você pode perder chamadas ou mensagens urgentes.]]></string>
     <string name="turning_off_service_and_periodic">A otimização da bateria está ativa, desativando o serviço em segundo plano e os pedidos periódicos de novas mensagens. Você pode reativá-los através das definições.</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Melhor para a bateria</b>. Apenas receberá notificações enquanto a app estiver em execução (SEM serviço em segundo plano)]]></string>
@@ -225,7 +224,6 @@
     <string name="calls_prohibited_with_this_contact">Chamadas de áudio/vídeo são proibidas.</string>
     <string name="notifications_mode_service_desc">O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.</string>
     <string name="la_authenticate">Autenticar</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Leia o código QR </b>: para se conectar ao seu contato que lhe mostra o código QR.]]></string>
     <string name="callstatus_ended">chamada finalizada %1$s</string>
     <string name="callstatus_calling">a chamar…</string>
     <string name="callstatus_error">erro de chamada</string>
@@ -241,7 +239,6 @@
     <string name="call_on_lock_screen">Chamadas no ecrã de bloqueio:</string>
     <string name="alert_title_cant_invite_contacts">Não é possível convidar contatos!</string>
     <string name="change_verb">Alterar</string>
-    <string name="cant_delete_user_profile">Não é possível eliminar o perfil do utilizador!</string>
     <string name="feature_cancelled_item">cancelado %s</string>
     <string name="cannot_receive_file">Não é possível receber o ficheiro</string>
     <string name="icon_descr_cancel_image_preview">Cancelar pré-visualização da imagem</string>
@@ -366,7 +363,6 @@
     <string name="connection_error">Erro de conexão</string>
     <string name="connection_local_display_name">conexão %1$d</string>
     <string name="contact_already_exists">O contato já existe</string>
-    <string name="create_one_time_link">Criar convite de ligação de utilização única</string>
     <string name="one_time_link">Convite de ligação de utilização única</string>
     <string name="save_servers_button">Salvar</string>
     <string name="settings_section_title_incognito">Modo anónimo</string>
@@ -584,8 +580,6 @@
     <string name="message_delivery_error_desc">Muito provavelmente este contato eliminou a conexão consigo.</string>
     <string name="this_text_is_available_in_settings">Este texto está disponível nas definições</string>
     <string name="update_onion_hosts_settings_question">Atualizar definições de servidores .onion\?</string>
-    <string name="your_contacts_will_see_it">Os seus contatos no SimpleX irão vê-lo.
-\nVocê pode alterá-lo nas Definições.</string>
     <string name="onboarding_notifications_mode_subtitle">Pode ser alterado mais tarde através das definições.</string>
     <string name="settings_section_title_help">AJUDA</string>
     <string name="settings_section_title_support">SUPORTE SIMPLEX CHAT</string>
@@ -635,7 +629,6 @@
     <string name="status_e2e_encrypted">encriptado ponta a ponta</string>
     <string name="feature_off">desligado</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 desktop: leia o código QR exibido a partir do aplicação, via <b>Ler código QR</b>.]]></string>
-    <string name="no_spaces">Sem espaços!</string>
     <string name="status_contact_has_no_e2e_encryption">contato não tem encriptação ponta a ponta</string>
     <string name="feature_offered_item_with_param">oferecido %s: %2s</string>
     <string name="chat_preferences_off">desligado</string>

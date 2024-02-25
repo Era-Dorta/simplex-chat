@@ -53,6 +53,10 @@ let DEFAULT_WHATS_NEW_VERSION = "defaultWhatsNewVersion"
 let DEFAULT_ONBOARDING_STAGE = "onboardingStage"
 let DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME = "customDisappearingMessageTime"
 let DEFAULT_SHOW_UNREAD_AND_FAVORITES = "showUnreadAndFavorites"
+let DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS = "deviceNameForRemoteAccess"
+let DEFAULT_CONFIRM_REMOTE_SESSIONS = "confirmRemoteSessions"
+let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST = "connectRemoteViaMulticast"
+let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "connectRemoteViaMulticastAuto"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -85,15 +89,24 @@ let appDefaults: [String: Any] = [
     DEFAULT_SHOW_MUTE_PROFILE_ALERT: true,
     DEFAULT_ONBOARDING_STAGE: OnboardingStage.onboardingComplete.rawValue,
     DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME: 300,
-    DEFAULT_SHOW_UNREAD_AND_FAVORITES: false
+    DEFAULT_SHOW_UNREAD_AND_FAVORITES: false,
+    DEFAULT_CONFIRM_REMOTE_SESSIONS: false,
+    DEFAULT_CONNECT_REMOTE_VIA_MULTICAST: true,
+    DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
 ]
+
+// not used anymore
+enum ConnectViaLinkTab: String {
+    case scan
+    case paste
+}
 
 enum SimpleXLinkMode: String, Identifiable {
     case description
     case full
     case browser
 
-    static var values: [SimpleXLinkMode] = [.description, .full, .browser]
+    static var values: [SimpleXLinkMode] = [.description, .full]
 
     public var id: Self { self }
 
@@ -146,37 +159,48 @@ struct SettingsView: View {
     }
 
     @ViewBuilder func settingsView() -> some View {
-        let user: User = chatModel.currentUser!
+        let user = chatModel.currentUser
         NavigationView {
             List {
                 Section("You") {
-                    NavigationLink {
-                        UserProfile()
-                            .navigationTitle("Your current profile")
-                    } label: {
-                        ProfilePreview(profileOf: user)
-                        .padding(.leading, -8)
+                    if let user = user {
+                        NavigationLink {
+                            UserProfile()
+                                .navigationTitle("Your current profile")
+                        } label: {
+                            ProfilePreview(profileOf: user)
+                                .padding(.leading, -8)
+                        }
                     }
 
                     NavigationLink {
-                        UserProfilesView()
+                        UserProfilesView(showSettings: $showSettings)
                     } label: {
                         settingsRow("person.crop.rectangle.stack") { Text("Your chat profiles") }
                     }
 
-                    NavigationLink {
-                        UserAddressView(shareViaProfile: chatModel.currentUser!.addressShared)
-                            .navigationTitle("SimpleX address")
-                            .navigationBarTitleDisplayMode(.large)
-                    } label: {
-                        settingsRow("qrcode") { Text("Your SimpleX address") }
+
+                    if let user = user {
+                        NavigationLink {
+                            UserAddressView(shareViaProfile: user.addressShared)
+                                .navigationTitle("SimpleX address")
+                                .navigationBarTitleDisplayMode(.large)
+                        } label: {
+                            settingsRow("qrcode") { Text("Your SimpleX address") }
+                        }
+
+                        NavigationLink {
+                            PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
+                                .navigationTitle("Your preferences")
+                        } label: {
+                            settingsRow("switch.2") { Text("Chat preferences") }
+                        }
                     }
 
                     NavigationLink {
-                        PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
-                            .navigationTitle("Your preferences")
+                        ConnectDesktopView(viaSettings: true)
                     } label: {
-                        settingsRow("switch.2") { Text("Chat preferences") }
+                        settingsRow("desktopcomputer") { Text("Use from desktop") }
                     }
                 }
                 .disabled(chatModel.chatRunning != true)
@@ -231,12 +255,14 @@ struct SettingsView: View {
                 }
 
                 Section("Help") {
-                    NavigationLink {
-                        ChatHelp(showSettings: $showSettings)
-                            .navigationTitle("Welcome \(user.displayName)!")
-                            .frame(maxHeight: .infinity, alignment: .top)
-                    } label: {
-                        settingsRow("questionmark") { Text("How to use it") }
+                    if let user = user {
+                        NavigationLink {
+                            ChatHelp(showSettings: $showSettings)
+                                .navigationTitle("Welcome \(user.displayName)!")
+                                .frame(maxHeight: .infinity, alignment: .top)
+                        } label: {
+                            settingsRow("questionmark") { Text("How to use it") }
+                        }
                     }
                     NavigationLink {
                         WhatsNewView(viaSettings: true)
@@ -362,7 +388,9 @@ struct SettingsView: View {
 
 func settingsRow<Content : View>(_ icon: String, color: Color = .secondary, content: @escaping () -> Content) -> some View {
     ZStack(alignment: .leading) {
-        Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(color)
+        Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+            .symbolRenderingMode(.monochrome)
+            .foregroundColor(color)
         content().padding(.leading, indent)
     }
 }
@@ -381,7 +409,9 @@ struct ProfilePreview: View {
                 Text(profileOf.displayName)
                     .fontWeight(.bold)
                     .font(.title2)
-                Text(profileOf.fullName)
+                if profileOf.fullName != "" && profileOf.fullName != profileOf.displayName {
+                    Text(profileOf.fullName)
+                }
             }
         }
     }

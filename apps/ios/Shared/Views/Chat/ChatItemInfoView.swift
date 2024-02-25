@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct ChatItemInfoView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     var ci: ChatItem
     @Binding var chatItemInfo: ChatItemInfo?
@@ -52,7 +53,9 @@ struct ChatItemInfoView: View {
     }
 
     private var title: String {
-        ci.chatDir.sent
+        ci.localNote
+        ? NSLocalizedString("Saved message", comment: "message info title")
+        : ci.chatDir.sent
         ? NSLocalizedString("Sent message", comment: "message info title")
         : NSLocalizedString("Received message", comment: "message info title")
     }
@@ -109,7 +112,11 @@ struct ChatItemInfoView: View {
                 .bold()
                 .padding(.bottom)
 
-            infoRow("Sent at", localTimestamp(meta.itemTs))
+            if ci.localNote {
+                infoRow("Created at", localTimestamp(meta.itemTs))
+            } else {
+                infoRow("Sent at", localTimestamp(meta.itemTs))
+            }
             if !ci.chatDir.sent {
                 infoRow("Received at", localTimestamp(meta.createdAt))
             }
@@ -167,7 +174,6 @@ struct ChatItemInfoView: View {
     @ViewBuilder private func itemVersionView(_ itemVersion: ChatItemVersion, _ maxWidth: CGFloat, current: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             textBubble(itemVersion.msgContent.text, itemVersion.formattedText, nil)
-                .allowsHitTesting(false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(chatItemFrameColor(ci, colorScheme))
@@ -197,11 +203,22 @@ struct ChatItemInfoView: View {
 
     @ViewBuilder private func textBubble(_ text: String, _ formattedText: [FormattedText]?, _ sender: String? = nil) -> some View {
         if text != "" {
-            messageText(text, formattedText, sender)
+            TextBubble(text: text, formattedText: formattedText, sender: sender)
         } else {
             Text("no text")
                 .italic()
                 .foregroundColor(.secondary)
+        }
+    }
+
+    private struct TextBubble: View {
+        var text: String
+        var formattedText: [FormattedText]?
+        var sender: String? = nil
+        @State private var showSecrets = false
+
+        var body: some View {
+            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, showSecrets: showSecrets))
         }
     }
 
@@ -226,7 +243,6 @@ struct ChatItemInfoView: View {
     @ViewBuilder private func quotedMsgView(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             textBubble(qi.text, qi.formattedText, qi.getSender(nil))
-                .allowsHitTesting(false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(quotedMsgFrameColor(qi, colorScheme))
@@ -290,8 +306,8 @@ struct ChatItemInfoView: View {
 
     private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, CIStatus)] {
         memberDeliveryStatuses.compactMap({ mds in
-            if let mem = ChatModel.shared.groupMembers.first(where: { $0.groupMemberId == mds.groupMemberId }) {
-                return (mem, mds.memberDeliveryStatus)
+            if let mem = chatModel.getGroupMember(mds.groupMemberId) {
+                return (mem.wrapped, mds.memberDeliveryStatus)
             } else {
                 return nil
             }
@@ -340,7 +356,12 @@ struct ChatItemInfoView: View {
     private func itemInfoShareText() -> String {
         let meta = ci.meta
         var shareText: [String] = [String.localizedStringWithFormat(NSLocalizedString("# %@", comment: "copied message info title, # <title>"), title), ""]
-        shareText += [String.localizedStringWithFormat(NSLocalizedString("Sent at: %@", comment: "copied message info"), localTimestamp(meta.itemTs))]
+        shareText += [String.localizedStringWithFormat(
+            ci.localNote
+                ? NSLocalizedString("Created at: %@", comment: "copied message info")
+                : NSLocalizedString("Sent at: %@", comment: "copied message info"),
+            localTimestamp(meta.itemTs))
+        ]
         if !ci.chatDir.sent {
             shareText += [String.localizedStringWithFormat(NSLocalizedString("Received at: %@", comment: "copied message info"), localTimestamp(meta.createdAt))]
         }

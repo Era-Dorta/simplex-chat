@@ -9,8 +9,10 @@
 import SwiftUI
 import AVKit
 import SimpleXChat
+import Combine
 
 struct CIVideoView: View {
+    @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
     private let chatItem: ChatItem
     private let image: String
@@ -24,9 +26,12 @@ struct CIVideoView: View {
     @State private var player: AVPlayer?
     @State private var fullPlayer: AVPlayer?
     @State private var url: URL?
+    @State private var urlDecrypted: URL?
+    @State private var decryptionInProgress: Bool = false
     @State private var showFullScreenPlayer = false
     @State private var timeObserver: Any? = nil
     @State private var fullScreenTimeObserver: Any? = nil
+    @State private var publisher: AnyCancellable? = nil
 
     init(chatItem: ChatItem, image: String, duration: Int, maxWidth: CGFloat, videoWidth: Binding<CGFloat?>, scrollProxy: ScrollViewProxy?) {
         self.chatItem = chatItem
@@ -36,8 +41,12 @@ struct CIVideoView: View {
         self._videoWidth = videoWidth
         self.scrollProxy = scrollProxy
         if let url = getLoadedVideo(chatItem.file) {
-            self._player = State(initialValue: VideoPlayerView.getOrCreatePlayer(url, false))
-            self._fullPlayer = State(initialValue: AVPlayer(url: url))
+            let decrypted = chatItem.file?.fileSource?.cryptoArgs == nil ? url : chatItem.file?.fileSource?.decryptedGet()
+            self._urlDecrypted = State(initialValue: decrypted)
+            if let decrypted = decrypted {
+                self._player = State(initialValue: VideoPlayerView.getOrCreatePlayer(decrypted, false))
+                self._fullPlayer = State(initialValue: AVPlayer(url: decrypted))
+            }
             self._url = State(initialValue: url)
         }
         if let data = Data(base64Encoded: dropImagePrefix(image)),
@@ -50,8 +59,10 @@ struct CIVideoView: View {
         let file = chatItem.file
         ZStack {
             ZStack(alignment: .topLeading) {
-                if let file = file, let preview = preview, let player = player, let url = url {
-                    videoView(player, url, file, preview, duration)
+                if let file = file, let preview = preview, let player = player, let decrypted = urlDecrypted {
+                    videoView(player, decrypted, file, preview, duration)
+                } else if let file = file, let defaultPreview = preview, file.loaded && urlDecrypted == nil {
+                    videoViewEncrypted(file, defaultPreview, duration)
                 } else if let data = Data(base64Encoded: dropImagePrefix(image)),
                           let uiImage = UIImage(data: data) {
                     imageView(uiImage)
@@ -59,7 +70,7 @@ struct CIVideoView: View {
                         if let file = file {
                             switch file.fileStatus {
                             case .rcvInvitation:
-                                receiveFileIfValidSize(file: file, encrypted: false, receiveFile: receiveFile)
+                                receiveFileIfValidSize(file: file, receiveFile: receiveFile)
                             case .rcvAccepted:
                                 switch file.fileProtocol {
                                 case .xftp:
@@ -72,6 +83,7 @@ struct CIVideoView: View {
                                         title: "Waiting for video",
                                         message: "Video will be received when your contact is online, please wait or check later!"
                                     )
+                                case .local: ()
                                 }
                             case .rcvTransfer: () // ?
                             case .rcvComplete: () // ?
@@ -85,9 +97,43 @@ struct CIVideoView: View {
             }
             if let file = file, case .rcvInvitation = file.fileStatus {
                 Button {
-                    receiveFileIfValidSize(file: file, encrypted: false, receiveFile: receiveFile)
+                    receiveFileIfValidSize(file: file, receiveFile: receiveFile)
                 } label: {
                     playPauseIcon("play.fill")
+                }
+            }
+        }
+    }
+
+    private func videoViewEncrypted(_ file: CIFile, _ defaultPreview: UIImage, _ duration: Int) -> some View {
+        return ZStack(alignment: .topTrailing) {
+            ZStack(alignment: .center) {
+                let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
+                imageView(defaultPreview)
+                .fullScreenCover(isPresented: $showFullScreenPlayer) {
+                    if let decrypted = urlDecrypted {
+                        fullScreenPlayer(decrypted)
+                    }
+                }
+                .onTapGesture {
+                    decrypt(file: file) {
+                        showFullScreenPlayer = urlDecrypted != nil
+                    }
+                }
+                if !decryptionInProgress {
+                    Button {
+                        decrypt(file: file) {
+                            if let decrypted = urlDecrypted {
+                                videoPlaying = true
+                                player?.play()
+                            }
+                        }
+                    } label: {
+                        playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
+                    }
+                    .disabled(!canBePlayed)
+                } else {
+                    videoDecryptionProgress()
                 }
             }
         }
@@ -98,10 +144,10 @@ struct CIVideoView: View {
         DispatchQueue.main.async { videoWidth = w }
         return ZStack(alignment: .topTrailing) {
             ZStack(alignment: .center) {
-                let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete
+                let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
                 VideoPlayerView(player: player, url: url, showControls: false)
                 .frame(width: w, height: w * preview.size.height / preview.size.width)
-                .onChange(of: ChatModel.shared.stopPreviousRecPlay) { playingUrl in
+                .onChange(of: m.stopPreviousRecPlay) { playingUrl in
                     if playingUrl != url {
                         player.pause()
                         videoPlaying = false
@@ -124,7 +170,7 @@ struct CIVideoView: View {
                 }
                 if !videoPlaying {
                     Button {
-                        ChatModel.shared.stopPreviousRecPlay = url
+                        m.stopPreviousRecPlay = url
                         player.play()
                     } label: {
                         playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
@@ -154,6 +200,16 @@ struct CIVideoView: View {
         .frame(width: 40, height: 40)
         .background(Color.black.opacity(0.35))
         .clipShape(Circle())
+    }
+
+    private func videoDecryptionProgress(_ color: Color = .white) -> some View {
+        ProgressView()
+            .progressViewStyle(.circular)
+            .frame(width: 12, height: 12)
+            .tint(color)
+            .frame(width: 40, height: 40)
+            .background(Color.black.opacity(0.35))
+            .clipShape(Circle())
     }
 
     private func durationProgress() -> some View {
@@ -199,11 +255,13 @@ struct CIVideoView: View {
                 switch file.fileProtocol {
                 case .xftp: progressView()
                 case .smp: EmptyView()
+                case .local: EmptyView()
                 }
             case let .sndTransfer(sndProgress, sndTotal):
                 switch file.fileProtocol {
                 case .xftp: progressCircle(sndProgress, sndTotal)
                 case .smp: progressView()
+                case .local: EmptyView()
                 }
             case .sndComplete: fileIcon("checkmark", 10, 13)
             case .sndCancelled: fileIcon("xmark", 10, 13)
@@ -254,10 +312,10 @@ struct CIVideoView: View {
     }
 
     // TODO encrypt: where file size is checked?
-    private func receiveFileIfValidSize(file: CIFile, encrypted: Bool, receiveFile: @escaping (User, Int64, Bool, Bool) async -> Void) {
+    private func receiveFileIfValidSize(file: CIFile, receiveFile: @escaping (User, Int64, Bool) async -> Void) {
         Task {
-            if let user = ChatModel.shared.currentUser {
-                await receiveFile(user, file.fileId, encrypted, false)
+            if let user = m.currentUser {
+                await receiveFile(user, file.fileId, false)
             }
         }
     }
@@ -290,9 +348,17 @@ struct CIVideoView: View {
             )
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now()) {
-                    ChatModel.shared.stopPreviousRecPlay = url
+                    m.stopPreviousRecPlay = url
                     if let player = fullPlayer {
                         player.play()
+                        var played = false
+                        publisher = player.publisher(for: \.timeControlStatus).sink { status in
+                            if played || status == .playing {
+                                AppDelegate.keepScreenOn(status == .playing)
+                                AudioPlayer.changeAudioSession(status == .playing)
+                            }
+                            played = status == .playing
+                        }
                         fullScreenTimeObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player.currentItem, queue: .main) { _ in
                             player.seek(to: CMTime.zero)
                             player.play()
@@ -307,6 +373,23 @@ struct CIVideoView: View {
                 fullScreenTimeObserver = nil
                 fullPlayer?.pause()
                 fullPlayer?.seek(to: CMTime.zero)
+                publisher?.cancel()
+            }
+        }
+    }
+
+    private func decrypt(file: CIFile, completed: (() -> Void)? = nil) {
+        if decryptionInProgress { return }
+        decryptionInProgress = true
+        Task {
+            urlDecrypted = await file.fileSource?.decryptedGetOrCreate(&ChatModel.shared.filesToDelete)
+            await MainActor.run {
+                if let decrypted = urlDecrypted {
+                    player = VideoPlayerView.getOrCreatePlayer(decrypted, false)
+                    fullPlayer = AVPlayer(url: decrypted)
+                }
+                decryptionInProgress = true
+                completed?()
             }
         }
     }

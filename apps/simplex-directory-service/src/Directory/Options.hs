@@ -5,22 +5,23 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Directory.Options
- ( DirectoryOpts (..),
-   getDirectoryOpts,
-   mkChatOpts,
- )
+  ( DirectoryOpts (..),
+    getDirectoryOpts,
+    mkChatOpts,
+  )
 where
 
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
-import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts, coreChatOptsP)
+import Simplex.Chat.Options (ChatOpts (..), ChatCmdLog (..), CoreChatOpts, coreChatOptsP)
 
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
     superUsers :: [KnownContact],
     directoryLog :: Maybe FilePath,
     serviceName :: String,
+    searchResults :: Int,
     testing :: Bool
   }
 
@@ -35,8 +36,8 @@ directoryOpts appDir defaultDbFileName = do
           <> help "Comma-separated list of super-users in the format CONTACT_ID:DISPLAY_NAME who will be allowed to manage the directory"
       )
   directoryLog <-
-    Just <$>
-      strOption
+    Just
+      <$> strOption
         ( long "directory-file"
             <> metavar "DIRECTORY_FILE"
             <> help "Append only log for directory state"
@@ -54,6 +55,7 @@ directoryOpts appDir defaultDbFileName = do
         superUsers,
         directoryLog,
         serviceName,
+        searchResults = 10,
         testing = False
       }
 
@@ -72,13 +74,16 @@ mkChatOpts :: DirectoryOpts -> ChatOpts
 mkChatOpts DirectoryOpts {coreOptions} =
   ChatOpts
     { coreOptions,
+      deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
+      chatCmdLog = CCLNone,
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
       showReactions = False,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
+      markRead = False,
       maintenance = False
     }

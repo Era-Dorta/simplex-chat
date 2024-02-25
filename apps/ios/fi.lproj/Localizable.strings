@@ -56,9 +56,6 @@
 "**Add new contact**: to create your one-time QR Code for your contact." = "**Lisää uusi kontakti**: luo kertakäyttöinen QR-koodi tai linkki kontaktille.";
 
 /* No comment provided by engineer. */
-"**Create link / QR code** for your contact to use." = "**Luo linkki / QR-koodi* kontaktille.";
-
-/* No comment provided by engineer. */
 "**e2e encrypted** audio call" = "**e2e-salattu** äänipuhelu";
 
 /* No comment provided by engineer. */
@@ -71,16 +68,10 @@
 "**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Yksityisin**: älä käytä SimpleX Chat -ilmoituspalvelinta, tarkista viestit ajoittain taustalla (riippuu siitä, kuinka usein käytät sovellusta).";
 
 /* No comment provided by engineer. */
-"**Paste received link** or open it in the browser and tap **Open in mobile app**." = "**Liitä vastaanotettu linkki** tai avaa se selaimessa ja napauta **Avaa mobiilisovelluksessa**.";
-
-/* No comment provided by engineer. */
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Huomaa**: et voi palauttaa tai muuttaa tunnuslausetta, jos kadotat sen.";
 
 /* No comment provided by engineer. */
 "**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Suositus**: laitetunnus ja ilmoitukset lähetetään SimpleX Chat -ilmoituspalvelimelle, mutta ei viestin sisältöä, kokoa tai sitä, keneltä se on peräisin.";
-
-/* No comment provided by engineer. */
-"**Scan QR code**: to connect to your contact in person or via video call." = "**Skannaa QR-koodi**: muodosta yhteys kontaktiisi henkilökohtaisesti tai videopuhelun kautta.";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Varoitus**: Välittömät push-ilmoitukset vaativat tunnuslauseen, joka on tallennettu Keychainiin.";
@@ -182,6 +173,9 @@
 "%lld minutes" = "%lld minuuttia";
 
 /* No comment provided by engineer. */
+"%lld new interface languages" = "%lld uutta käyttöliittymän kieltä";
+
+/* No comment provided by engineer. */
 "%lld second(s)" = "%lld sekunti(a)";
 
 /* No comment provided by engineer. */
@@ -240,9 +234,6 @@
 
 /* time interval */
 "1 week" = "1 viikko";
-
-/* No comment provided by engineer. */
-"1-time link" = "Kertakäyttölinkki";
 
 /* No comment provided by engineer. */
 "5 minutes" = "5 minuuttia";
@@ -381,7 +372,7 @@
 "Allow disappearing messages only if your contact allows it to you." = "Salli katoavat viestit vain, jos kontaktisi sallii sen sinulle.";
 
 /* No comment provided by engineer. */
-"Allow irreversible message deletion only if your contact allows it to you." = "Salli peruuttamaton viestien poisto vain, jos kontaktisi sallii ne sinulle.";
+"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Salli peruuttamaton viestien poisto vain, jos kontaktisi sallii ne sinulle. (24 tuntia)";
 
 /* No comment provided by engineer. */
 "Allow message reactions only if your contact allows them." = "Salli reaktiot viesteihin vain, jos kontaktisi sallii ne.";
@@ -396,7 +387,7 @@
 "Allow sending disappearing messages." = "Salli katoavien viestien lähettäminen.";
 
 /* No comment provided by engineer. */
-"Allow to irreversibly delete sent messages." = "Salli lähetettyjen viestien peruuttamaton poistaminen.";
+"Allow to irreversibly delete sent messages. (24 hours)" = "Salli lähetettyjen viestien peruuttamaton poistaminen. (24 tuntia)";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Salli tiedostojen ja median lähettäminen.";
@@ -417,7 +408,7 @@
 "Allow your contacts to call you." = "Salli kontaktiesi soittaa sinulle.";
 
 /* No comment provided by engineer. */
-"Allow your contacts to irreversibly delete sent messages." = "Salli kontaktiesi poistaa lähetetyt viestit peruuttamattomasti.";
+"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "Salli kontaktiesi poistaa lähetetyt viestit peruuttamattomasti. (24 tuntia)";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "Salli kontaktiesi lähettää katoavia viestejä.";
@@ -525,7 +516,7 @@
 "Both you and your contact can add message reactions." = "Sekä sinä että kontaktisi voivat käyttää viestireaktioita.";
 
 /* No comment provided by engineer. */
-"Both you and your contact can irreversibly delete sent messages." = "Sekä sinä että kontaktisi voitte peruuttamattomasti poistaa lähetetyt viestit.";
+"Both you and your contact can irreversibly delete sent messages. (24 hours)" = "Sekä sinä että kontaktisi voitte peruuttamattomasti poistaa lähetetyt viestit. (24 tuntia)";
 
 /* No comment provided by engineer. */
 "Both you and your contact can make calls." = "Sekä sinä että kontaktisi voitte soittaa puheluita.";
@@ -553,9 +544,6 @@
 
 /* No comment provided by engineer. */
 "Calls" = "Puhelut";
-
-/* No comment provided by engineer. */
-"Can't delete user profile!" = "Käyttäjäprofiilia ei voi poistaa!";
 
 /* No comment provided by engineer. */
 "Can't invite contact!" = "Kontaktia ei voi kutsua!";
@@ -709,25 +697,13 @@
 "Connect" = "Yhdistä";
 
 /* No comment provided by engineer. */
-"Connect directly" = "Yhdistä suoraan";
-
-/* No comment provided by engineer. */
 "Connect incognito" = "Yhdistä Incognito";
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "ole yhteydessä SimpleX Chat -kehittäjiin.";
 
 /* No comment provided by engineer. */
-"Connect via contact link" = "Yhdistä kontaktilinkillä";
-
-/* No comment provided by engineer. */
-"Connect via group link?" = "Yhdistetäänkö ryhmälinkin kautta?";
-
-/* No comment provided by engineer. */
 "Connect via link" = "Yhdistä linkin kautta";
-
-/* No comment provided by engineer. */
-"Connect via link / QR code" = "Yhdistä linkillä / QR-koodilla";
 
 /* No comment provided by engineer. */
 "Connect via one-time link" = "Yhdistä kertalinkillä";
@@ -790,9 +766,6 @@
 "Contact already exists" = "Kontakti on jo olemassa";
 
 /* No comment provided by engineer. */
-"Contact and all messages will be deleted - this cannot be undone!" = "Kontakti ja kaikki viestit poistetaan - tätä ei voi perua!";
-
-/* No comment provided by engineer. */
 "contact has e2e encryption" = "kontaktilla on e2e-salaus";
 
 /* No comment provided by engineer. */
@@ -844,7 +817,7 @@
 "Create link" = "Luo linkki";
 
 /* No comment provided by engineer. */
-"Create one-time invitation link" = "Luo kertakutsulinkki";
+"Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "Luo uusi profiili [työpöytäsovelluksessa](https://simplex.chat/downloads/). 💻";
 
 /* server test step */
 "Create queue" = "Luo jono";
@@ -992,9 +965,6 @@
 
 /* No comment provided by engineer. */
 "Delete Contact" = "Poista kontakti";
-
-/* No comment provided by engineer. */
-"Delete contact?" = "Poista kontakti?";
 
 /* No comment provided by engineer. */
 "Delete database" = "Poista tietokanta";
@@ -1150,10 +1120,7 @@
 "Disconnect" = "Katkaise";
 
 /* No comment provided by engineer. */
-"Display name" = "Näyttönimi";
-
-/* No comment provided by engineer. */
-"Display name:" = "Näyttönimi:";
+"Discover and join groups" = "Löydä ryhmiä ja liity niihin";
 
 /* No comment provided by engineer. */
 "Do it later" = "Tee myöhemmin";
@@ -1615,7 +1582,7 @@
 "Group members can add message reactions." = "Ryhmän jäsenet voivat lisätä viestireaktioita.";
 
 /* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages." = "Ryhmän jäsenet voivat poistaa lähetetyt viestit peruuttamattomasti.";
+"Group members can irreversibly delete sent messages. (24 hours)" = "Ryhmän jäsenet voivat poistaa lähetetyt viestit peruuttamattomasti. (24 tuntia)";
 
 /* No comment provided by engineer. */
 "Group members can send direct messages." = "Ryhmän jäsenet voivat lähettää suoraviestejä.";
@@ -1706,9 +1673,6 @@
 
 /* No comment provided by engineer. */
 "If you can't meet in person, show QR code in a video call, or share the link." = "Jos et voi tavata henkilökohtaisesti, näytä QR-koodi videopuhelussa tai jaa linkki.";
-
-/* No comment provided by engineer. */
-"If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Jos et voi tavata henkilökohtaisesti, voit **skannata QR-koodin videopuhelussa** tai kontaktisi voi jakaa kutsulinkin.";
 
 /* No comment provided by engineer. */
 "If you enter this passcode when opening the app, all app data will be irreversibly removed!" = "Jos syötät tämän pääsykoodin sovellusta avatessasi, kaikki sovelluksen tiedot poistetaan peruuttamattomasti!";
@@ -1949,6 +1913,9 @@
 
 /* No comment provided by engineer. */
 "Live messages" = "Live-viestit";
+
+/* No comment provided by engineer. */
+"Local" = "Paikallinen";
 
 /* No comment provided by engineer. */
 "Local name" = "Paikallinen nimi";
@@ -2203,14 +2170,12 @@
 "observer" = "tarkkailija";
 
 /* enabled status
-   group pref value */
+   group pref value
+   time to disappear */
 "off" = "pois";
 
 /* No comment provided by engineer. */
 "Off" = "Pois";
-
-/* No comment provided by engineer. */
-"Off (Local)" = "Pois (Paikallinen)";
 
 /* feature offered item */
 "offered %@" = "tarjottu %@";
@@ -2258,7 +2223,7 @@
 "Only you can add message reactions." = "Vain sinä voit lisätä viestireaktioita.";
 
 /* No comment provided by engineer. */
-"Only you can irreversibly delete messages (your contact can mark them for deletion)." = "Vain sinä voit poistaa viestejä peruuttamattomasti (kontaktisi voi merkitä ne poistettavaksi).";
+"Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" = "Vain sinä voit poistaa viestejä peruuttamattomasti (kontaktisi voi merkitä ne poistettavaksi). (24 tuntia)";
 
 /* No comment provided by engineer. */
 "Only you can make calls." = "Vain sinä voit soittaa puheluita.";
@@ -2273,7 +2238,7 @@
 "Only your contact can add message reactions." = "Vain kontaktisi voi lisätä viestireaktioita.";
 
 /* No comment provided by engineer. */
-"Only your contact can irreversibly delete messages (you can mark them for deletion)." = "Vain kontaktisi voi poistaa viestejä peruuttamattomasti (voit merkitä ne poistettavaksi).";
+"Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" = "Vain kontaktisi voi poistaa viestejä peruuttamattomasti (voit merkitä ne poistettavaksi). (24 tuntia)";
 
 /* No comment provided by engineer. */
 "Only your contact can make calls." = "Vain kontaktisi voi soittaa puheluita.";
@@ -2299,15 +2264,6 @@
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "Avoimen lähdekoodin protokolla ja koodi - kuka tahansa voi käyttää palvelimia.";
 
-/* No comment provided by engineer. */
-"Opening database…" = "Avataan tietokantaa…";
-
-/* No comment provided by engineer. */
-"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "Linkin avaaminen selaimessa voi heikentää yhteyden yksityisyyttä ja turvallisuutta. Epäluotetut SimpleX-linkit näkyvät punaisina.";
-
-/* No comment provided by engineer. */
-"or chat with the developers" = "tai keskustele kehittäjien kanssa";
-
 /* member role */
 "owner" = "omistaja";
 
@@ -2330,16 +2286,7 @@
 "Password to show" = "Salasana näytettäväksi";
 
 /* No comment provided by engineer. */
-"Paste" = "Liitä";
-
-/* No comment provided by engineer. */
 "Paste image" = "Liitä kuva";
-
-/* No comment provided by engineer. */
-"Paste received link" = "Liitä vastaanotettu linkki";
-
-/* placeholder */
-"Paste the link you received to connect with your contact." = "Liitä saamasi linkki, jonka avulla voit muodostaa yhteyden kontaktiisi.";
 
 /* No comment provided by engineer. */
 "peer-to-peer" = "vertais";
@@ -2885,9 +2832,6 @@
 "Share link" = "Jaa linkki";
 
 /* No comment provided by engineer. */
-"Share one-time invitation link" = "Jaa kertakutsulinkki";
-
-/* No comment provided by engineer. */
 "Share with contacts" = "Jaa kontaktien kanssa";
 
 /* No comment provided by engineer. */
@@ -2958,9 +2902,6 @@
 
 /* notification title */
 "Somebody" = "Joku";
-
-/* No comment provided by engineer. */
-"Start a new chat" = "Aloita uusi keskustelu";
 
 /* No comment provided by engineer. */
 "Start chat" = "Aloita keskustelu";
@@ -3089,9 +3030,6 @@
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Salaus toimii ja uutta salaussopimusta ei tarvita. Tämä voi johtaa yhteysvirheisiin!";
 
 /* No comment provided by engineer. */
-"The group is fully decentralized – it is visible only to the members." = "Ryhmä on täysin hajautettu - se näkyy vain jäsenille.";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Edellisen viestin tarkiste on erilainen.";
 
 /* No comment provided by engineer. */
@@ -3123,12 +3061,6 @@
 
 /* No comment provided by engineer. */
 "Theme" = "Teema";
-
-/* No comment provided by engineer. */
-"There should be at least one user profile." = "Käyttäjäprofiileja tulee olla vähintään yksi.";
-
-/* No comment provided by engineer. */
-"There should be at least one visible user profile." = "Näkyviä käyttäjäprofiileja tulee olla vähintään yksi.";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Nämä asetukset koskevat nykyistä profiiliasi **%@**.";
@@ -3198,9 +3130,6 @@
 
 /* No comment provided by engineer. */
 "Turn off" = "Sammuta";
-
-/* No comment provided by engineer. */
-"Turn off notifications?" = "Kytke ilmoitukset pois päältä?";
 
 /* No comment provided by engineer. */
 "Turn on" = "Kytke päälle";
@@ -3470,9 +3399,6 @@
 "You can accept calls from lock screen, without device and app authentication." = "Voit vastaanottaa puheluita lukitusnäytöltä ilman laitteen ja sovelluksen todennusta.";
 
 /* No comment provided by engineer. */
-"You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "Voit myös muodostaa yhteyden klikkaamalla linkkiä. Jos se avautuu selaimessa, napsauta **Avaa mobiilisovelluksessa**-painiketta.";
-
-/* No comment provided by engineer. */
 "You can create it later" = "Voit luoda sen myöhemmin";
 
 /* No comment provided by engineer. */
@@ -3581,9 +3507,6 @@
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Sinun on tunnistauduttava, kun käynnistät sovelluksen tai jatkat sen käyttöä 30 sekunnin tauon jälkeen.";
 
 /* No comment provided by engineer. */
-"You will join a group this link refers to and connect to its group members." = "Liityt ryhmään, johon tämä linkki viittaa, ja muodostat yhteyden sen ryhmän jäseniin.";
-
-/* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "Saat edelleen puheluita ja ilmoituksia mykistetyiltä profiileilta, kun ne ovat aktiivisia.";
 
 /* No comment provided by engineer. */
@@ -3614,9 +3537,6 @@
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Keskustelut-tietokantasi ei ole salattu - aseta tunnuslause sen salaamiseksi.";
 
 /* No comment provided by engineer. */
-"Your chat profile will be sent to group members" = "Keskusteluprofiilisi lähetetään ryhmän jäsenille";
-
-/* No comment provided by engineer. */
 "Your chat profiles" = "Keskusteluprofiilisi";
 
 /* No comment provided by engineer. */
@@ -3627,9 +3547,6 @@
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Kontaktisi voivat sallia viestien täydellisen poistamisen.";
-
-/* No comment provided by engineer. */
-"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "Kontaktisi SimpleX:ssä näkevät sen.\nVoit muuttaa sitä Asetuksista.";
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Kontaktisi pysyvät yhdistettyinä.";

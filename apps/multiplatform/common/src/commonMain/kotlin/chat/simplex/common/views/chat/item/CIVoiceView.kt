@@ -22,7 +22,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.*
 
 // TODO refactor https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
 
@@ -36,7 +36,7 @@ fun CIVoiceView(
   ci: ChatItem,
   timedMessagesTTL: Int?,
   longClick: () -> Unit,
-  receiveFile: (Long, Boolean) -> Unit,
+  receiveFile: (Long) -> Unit,
 ) {
   Row(
     Modifier.padding(top = if (hasText) 14.dp else 4.dp, bottom = if (hasText) 14.dp else 6.dp, start = if (hasText) 6.dp else 0.dp, end = if (hasText) 6.dp else 0.dp),
@@ -44,16 +44,25 @@ fun CIVoiceView(
   ) {
     if (file != null) {
       val f = file.fileSource?.filePath
-      val fileSource = remember(f, file.fileStatus) { getLoadedFileSource(file) }
+      val fileSource = remember(f, file.fileStatus, CIFile.cachedRemoteFileRequests.toList()) { mutableStateOf(getLoadedFileSource(file)) }
       var brokenAudio by rememberSaveable(f) { mutableStateOf(false) }
       val audioPlaying = rememberSaveable(f) { mutableStateOf(false) }
       val progress = rememberSaveable(f) { mutableStateOf(0) }
       val duration = rememberSaveable(f) { mutableStateOf(providedDurationSec * 1000) }
-      val play = {
-        if (fileSource != null) {
-          AudioPlayer.play(fileSource, audioPlaying, progress, duration, true)
-          brokenAudio = !audioPlaying.value
+      val play: () -> Unit = {
+        val playIfExists = {
+          if (fileSource.value != null) {
+            AudioPlayer.play(fileSource.value!!, audioPlaying, progress, duration, true)
+            brokenAudio = !audioPlaying.value
+          }
         }
+        if (chatModel.connectedToRemote() && fileSource.value == null) {
+          withBGApi {
+            file.loadRemoteFile(true)
+            fileSource.value = getLoadedFileSource(file)
+            playIfExists()
+          }
+        } else playIfExists()
       }
       val pause = {
         AudioPlayer.pause(audioPlaying, progress)
@@ -68,7 +77,7 @@ fun CIVoiceView(
         }
       }
       VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick, receiveFile) {
-        AudioPlayer.seekTo(it, progress, fileSource?.filePath)
+        AudioPlayer.seekTo(it, progress, fileSource.value?.filePath)
       }
     } else {
       VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick, receiveFile)
@@ -96,7 +105,7 @@ private fun VoiceLayout(
   play: () -> Unit,
   pause: () -> Unit,
   longClick: () -> Unit,
-  receiveFile: (Long, Boolean) -> Unit,
+  receiveFile: (Long) -> Unit,
   onProgressChanged: (Int) -> Unit,
 ) {
   @Composable
@@ -216,7 +225,8 @@ private fun PlayPauseButton(
   Surface(
     Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
     color = if (sent) sentColor else receivedColor,
-    shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
+    shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
+    contentColor = LocalContentColor.current
   ) {
     Box(
       Modifier
@@ -250,7 +260,7 @@ private fun VoiceMsgIndicator(
   play: () -> Unit,
   pause: () -> Unit,
   longClick: () -> Unit,
-  receiveFile: (Long, Boolean) -> Unit,
+  receiveFile: (Long) -> Unit,
 ) {
   val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
   val strokeColor = MaterialTheme.colors.primary
@@ -270,7 +280,7 @@ private fun VoiceMsgIndicator(
     }
   } else {
     if (file?.fileStatus is CIFileStatus.RcvInvitation) {
-      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId, chatController.appPrefs.privacyEncryptLocalFiles.get()) }, {}, longClick = longClick)
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId) }, {}, longClick = longClick)
     } else if (file?.fileStatus is CIFileStatus.RcvTransfer
       || file?.fileStatus is CIFileStatus.RcvAccepted
     ) {

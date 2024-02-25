@@ -15,8 +15,7 @@ struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
-    @State var groupInfo: GroupInfo
-    @ObservedObject private var alertManager = AlertManager.shared
+    @Binding var groupInfo: GroupInfo
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
@@ -35,14 +34,34 @@ struct GroupChatInfoView: View {
         case leaveGroupAlert
         case cantInviteIncognitoAlert
         case largeGroupReceiptsDisabled
+        case blockMemberAlert(mem: GroupMember)
+        case unblockMemberAlert(mem: GroupMember)
+        case blockForAllAlert(mem: GroupMember)
+        case unblockForAllAlert(mem: GroupMember)
+        case removeMemberAlert(mem: GroupMember)
+        case error(title: LocalizedStringKey, error: LocalizedStringKey)
 
-        var id: GroupChatInfoViewAlert { get { self } }
+        var id: String {
+            switch self {
+            case .deleteGroupAlert: return "deleteGroupAlert"
+            case .clearChatAlert: return "clearChatAlert"
+            case .leaveGroupAlert: return "leaveGroupAlert"
+            case .cantInviteIncognitoAlert: return "cantInviteIncognitoAlert"
+            case .largeGroupReceiptsDisabled: return "largeGroupReceiptsDisabled"
+            case let .blockMemberAlert(mem): return "blockMemberAlert \(mem.groupMemberId)"
+            case let .unblockMemberAlert(mem): return "unblockMemberAlert \(mem.groupMemberId)"
+            case let .blockForAllAlert(mem): return "blockForAllAlert \(mem.groupMemberId)"
+            case let .unblockForAllAlert(mem): return "unblockForAllAlert \(mem.groupMemberId)"
+            case let .removeMemberAlert(mem): return "removeMemberAlert \(mem.groupMemberId)"
+            case let .error(title, _): return "error \(title)"
+            }
+        }
     }
 
     var body: some View {
         NavigationView {
             let members = chatModel.groupMembers
-                .filter { $0.memberStatus != .memLeft && $0.memberStatus != .memRemoved }
+                .filter { m in let status = m.wrapped.memberStatus; return status != .memLeft && status != .memRemoved }
                 .sorted { $0.displayName.lowercased() < $1.displayName.lowercased() }
 
             List {
@@ -57,7 +76,7 @@ struct GroupChatInfoView: View {
                         addOrEditWelcomeMessage()
                     }
                     groupPreferencesButton($groupInfo)
-                    if members.filter({ $0.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
+                    if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
                         sendReceiptsOption()
                     } else {
                         sendReceiptsOptionDisabled()
@@ -84,17 +103,17 @@ struct GroupChatInfoView: View {
                             .padding(.leading, 8)
                     }
                     let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-                    let filteredMembers = s == "" ? members : members.filter { $0.chatViewName.localizedLowercase.contains(s) }
-                    memberView(groupInfo.membership, user: true)
+                    let filteredMembers = s == "" ? members : members.filter { $0.wrapped.chatViewName.localizedLowercase.contains(s) }
+                    MemberRowView(groupInfo: groupInfo, groupMember: GMember(groupInfo.membership), user: true, alert: $alert)
                     ForEach(filteredMembers) { member in
                         ZStack {
                             NavigationLink {
-                                memberInfoView(member.groupMemberId)
+                                memberInfoView(member)
                             } label: {
                                 EmptyView()
                             }
                             .opacity(0)
-                            memberView(member)
+                            MemberRowView(groupInfo: groupInfo, groupMember: member, alert: $alert)
                         }
                     }
                 }
@@ -126,6 +145,12 @@ struct GroupChatInfoView: View {
             case .leaveGroupAlert: return leaveGroupAlert()
             case .cantInviteIncognitoAlert: return cantInviteIncognitoAlert()
             case .largeGroupReceiptsDisabled: return largeGroupReceiptsDisabledAlert()
+            case let .blockMemberAlert(mem): return blockMemberAlert(groupInfo, mem)
+            case let .unblockMemberAlert(mem): return unblockMemberAlert(groupInfo, mem)
+            case let .blockForAllAlert(mem): return blockForAllAlert(groupInfo, mem)
+            case let .unblockForAllAlert(mem): return unblockForAllAlert(groupInfo, mem)
+            case let .removeMemberAlert(mem): return removeMemberAlert(mem)
+            case let .error(title, error): return Alert(title: Text(title), message: Text(error))
             }
         }
         .onAppear {
@@ -174,7 +199,7 @@ struct GroupChatInfoView: View {
                     Task {
                         let groupMembers = await apiListMembers(groupInfo.groupId)
                         await MainActor.run {
-                            ChatModel.shared.groupMembers = groupMembers
+                            chatModel.groupMembers = groupMembers.map { GMember.init($0) }
                         }
                     }
                 }
@@ -183,51 +208,144 @@ struct GroupChatInfoView: View {
         }
     }
 
-    private func memberView(_ member: GroupMember, user: Bool = false) -> some View {
-        HStack{
-            ProfileImage(imageStr: member.image)
-                .frame(width: 38, height: 38)
-                .padding(.trailing, 2)
-            // TODO server connection status
-            VStack(alignment: .leading) {
-                let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : .primary)
-                (member.verified ? memberVerifiedShield + t : t)
-                    .lineLimit(1)
-                let s = Text(member.memberStatus.shortText)
-                (user ? Text ("you: ") + s : s)
-                    .lineLimit(1)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+    private struct MemberRowView: View {
+        var groupInfo: GroupInfo
+        @ObservedObject var groupMember: GMember
+        var user: Bool = false
+        @Binding var alert: GroupChatInfoViewAlert?
+
+        var body: some View {
+            let member = groupMember.wrapped
+            let v = HStack{
+                ProfileImage(imageStr: member.image)
+                    .frame(width: 38, height: 38)
+                    .padding(.trailing, 2)
+                // TODO server connection status
+                VStack(alignment: .leading) {
+                    let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : .primary)
+                    (member.verified ? memberVerifiedShield + t : t)
+                        .lineLimit(1)
+                    let s = Text(member.memberStatus.shortText)
+                    (user ? Text ("you: ") + s : s)
+                        .lineLimit(1)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                memberInfo(member)
             }
-            Spacer()
-            let role = member.memberRole
-            if role == .owner || role == .admin {
-                Text(member.memberRole.text)
+
+            // revert from this:
+            if user {
+                v
+            } else if member.canBeRemoved(groupInfo: groupInfo) {
+                removeSwipe(member, blockSwipe(member, v))
+            } else {
+                blockSwipe(member, v)
+            }
+            // revert to this: vvv
+//            if user {
+//                v
+//            } else if groupInfo.membership.memberRole >= .admin {
+//                // TODO if there are more actions, refactor with lists of swipeActions
+//                let canBlockForAll = member.canBlockForAll(groupInfo: groupInfo)
+//                let canRemove = member.canBeRemoved(groupInfo: groupInfo)
+//                if canBlockForAll && canRemove {
+//                    removeSwipe(member, blockForAllSwipe(member, v))
+//                } else if canBlockForAll {
+//                    blockForAllSwipe(member, v)
+//                } else if canRemove {
+//                    removeSwipe(member, v)
+//                } else {
+//                    v
+//                }
+//            } else {
+//                if !member.blockedByAdmin {
+//                    blockSwipe(member, v)
+//                } else {
+//                    v
+//                }
+//            }
+            // ^^^
+        }
+
+        @ViewBuilder private func memberInfo(_ member: GroupMember) -> some View {
+            if member.blocked {
+                Text("blocked")
                     .foregroundColor(.secondary)
+            } else {
+                let role = member.memberRole
+                if [.owner, .admin, .observer].contains(role) {
+                    Text(member.memberRole.text)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+
+        private func blockSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
+            v.swipeActions(edge: .leading) {
+                if member.memberSettings.showMessages {
+                    Button {
+                        alert = .blockMemberAlert(mem: member)
+                    } label: {
+                        Label("Block member", systemImage: "hand.raised").foregroundColor(.secondary)
+                    }
+                } else {
+                    Button {
+                        alert = .unblockMemberAlert(mem: member)
+                    } label: {
+                        Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                    }
+                }
+            }
+        }
+
+        private func blockForAllSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
+            v.swipeActions(edge: .leading) {
+                if member.blockedByAdmin {
+                    Button {
+                        alert = .unblockForAllAlert(mem: member)
+                    } label: {
+                        Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                    }
+                } else {
+                    Button {
+                        alert = .blockForAllAlert(mem: member)
+                    } label: {
+                        Label("Block for all", systemImage: "hand.raised").foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+
+        private func removeSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
+            v.swipeActions(edge: .trailing) {
+                Button(role: .destructive) {
+                    alert = .removeMemberAlert(mem: member)
+                } label: {
+                    Label("Remove member", systemImage: "trash")
+                        .foregroundColor(Color.red)
+                }
             }
         }
     }
 
-    private var memberVerifiedShield: Text {
-        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
-            .font(.caption)
-            .baselineOffset(2)
-            .kerning(-2)
-            .foregroundColor(.secondary)
-    }
-
-    @ViewBuilder private func memberInfoView(_ groupMemberId: Int64?) -> some View {
-        if let mId = groupMemberId, let member = chatModel.groupMembers.first(where: { $0.groupMemberId == mId }) {
-            GroupMemberInfoView(groupInfo: groupInfo, member: member)
-                .navigationBarHidden(false)
-        }
+    private func memberInfoView(_ groupMember: GMember) -> some View {
+        GroupMemberInfoView(groupInfo: groupInfo, groupMember: groupMember)
+            .navigationBarHidden(false)
     }
 
     private func groupLinkButton() -> some View {
         NavigationLink {
-            GroupLinkView(groupId: groupInfo.groupId, groupLink: $groupLink, groupLinkMemberRole: $groupLinkMemberRole)
-                .navigationBarTitle("Group link")
-                .navigationBarTitleDisplayMode(.large)
+            GroupLinkView(
+                groupId: groupInfo.groupId,
+                groupLink: $groupLink,
+                groupLinkMemberRole: $groupLinkMemberRole,
+                showTitle: false,
+                creatingGroup: false
+            )
+            .navigationBarTitle("Group link")
+            .navigationBarTitleDisplayMode(.large)
         } label: {
             if groupLink == nil {
                 Label("Create group link", systemImage: "link.badge.plus")
@@ -252,7 +370,11 @@ struct GroupChatInfoView: View {
 
     private func addOrEditWelcomeMessage() -> some View {
         NavigationLink {
-            GroupWelcomeView(groupId: groupInfo.groupId, groupInfo: $groupInfo)
+            GroupWelcomeView(
+                groupInfo: $groupInfo,
+                groupProfile: groupInfo.groupProfile,
+                welcomeText: groupInfo.groupProfile.description ?? ""
+            )
             .navigationTitle("Welcome message")
             .navigationBarTitleDisplayMode(.large)
         } label: {
@@ -375,6 +497,28 @@ struct GroupChatInfoView: View {
             alert = .largeGroupReceiptsDisabled
         }
     }
+
+    private func removeMemberAlert(_ mem: GroupMember) -> Alert {
+        Alert(
+            title: Text("Remove member?"),
+            message: Text("Member will be removed from group - this cannot be undone!"),
+            primaryButton: .destructive(Text("Remove")) {
+                Task {
+                    do {
+                        let updatedMember = try await apiRemoveMember(groupInfo.groupId, mem.groupMemberId)
+                        await MainActor.run {
+                            _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
+                        }
+                    } catch let error {
+                        logger.error("apiRemoveMember error: \(responseError(error))")
+                        let a = getErrorAlert(error, "Error removing member")
+                        alert = .error(title: a.title, error: a.message)
+                    }
+                }
+            },
+            secondaryButton: .cancel()
+        )
+    }
 }
 
 func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bool = false) -> some View {
@@ -396,6 +540,14 @@ func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bo
     }
 }
 
+private var memberVerifiedShield: Text {
+    (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+        .font(.caption)
+        .baselineOffset(2)
+        .kerning(-2)
+        .foregroundColor(.secondary)
+}
+
 func cantInviteIncognitoAlert() -> Alert {
     Alert(
         title: Text("Can't invite contacts!"),
@@ -412,6 +564,9 @@ func largeGroupReceiptsDisabledAlert() -> Alert {
 
 struct GroupChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []), groupInfo: GroupInfo.sampleData)
+        GroupChatInfoView(
+            chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []),
+            groupInfo: Binding.constant(GroupInfo.sampleData)
+        )
     }
 }

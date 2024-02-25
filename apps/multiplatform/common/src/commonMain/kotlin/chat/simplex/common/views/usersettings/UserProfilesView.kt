@@ -21,25 +21,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.chatPasswordHash
+import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.UserProfilePickerItem
 import chat.simplex.common.views.chatlist.UserProfileRow
-import chat.simplex.common.views.database.PassphraseField
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.onboarding.CreateProfile
-import chat.simplex.common.model.*
-import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.views.CreateProfile
+import chat.simplex.common.views.database.*
+import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 
 @Composable
-fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>) {
+fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>, drawerState: DrawerState) {
   val searchTextOrPassword = rememberSaveable { search }
   val users by remember { derivedStateOf { m.users.map { it.user } } }
   val filteredUsers by remember { derivedStateOf { filteredUsers(m, searchTextOrPassword.value) } }
+  val scope = rememberCoroutineScope()
   UserProfilesLayout(
     users = users,
     filteredUsers = filteredUsers,
@@ -50,6 +51,12 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     addUser = {
       ModalManager.center.showModalCloseable { close ->
         CreateProfile(m, close)
+        if (appPlatform.isDesktop) {
+          // Hide settings to allow clicks to pass through to CreateProfile view
+          DisposableEffectOnGone(always = { scope.launch { drawerState.close() } }) {
+            // Show settings again to allow intercept clicks to close modals after profile creation finishes
+            scope.launch(NonCancellable) { drawerState.open() } }
+        }
       }
     },
     activateUser = { user ->
@@ -58,73 +65,64 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
         ModalManager.end.closeModals()
       }
       withBGApi {
-        m.controller.changeActiveUser(user.userId, userViewPassword(user, searchTextOrPassword.value.trim()))
+        controller.showProgressIfNeeded {
+          m.controller.changeActiveUser(user.remoteHostId, user.userId, userViewPassword(user, searchTextOrPassword.value.trim()))
+        }
       }
     },
     removeUser = { user ->
-      if (m.users.size > 1 && (user.hidden || visibleUsersCount(m) > 1)) {
-        val text = buildAnnotatedString {
-          append(generalGetString(MR.strings.users_delete_all_chats_deleted) + "\n\n" + generalGetString(MR.strings.users_delete_profile_for) + " ")
-          withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-            append(user.displayName)
-          }
-          append(":")
+      val text = buildAnnotatedString {
+        append(generalGetString(MR.strings.users_delete_all_chats_deleted) + "\n\n" + generalGetString(MR.strings.users_delete_profile_for) + " ")
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+          append(user.displayName)
         }
-        AlertManager.shared.showAlertDialogButtonsColumn(
-          title = generalGetString(MR.strings.users_delete_question),
-          text = text,
-          buttons = {
-            Column {
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-                removeUser(m, user, users, true, searchTextOrPassword.value.trim())
-              }) {
-                Text(stringResource(MR.strings.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-              }
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-                removeUser(m, user, users, false, searchTextOrPassword.value.trim())
-              }
-              ) {
-                Text(stringResource(MR.strings.users_delete_data_only), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-              }
+        append(":")
+      }
+      AlertManager.shared.showAlertDialogButtonsColumn(
+        title = generalGetString(MR.strings.users_delete_question),
+        text = text,
+        buttons = {
+          Column {
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+              removeUser(m, user, users, true, searchTextOrPassword.value.trim())
+            }) {
+              Text(stringResource(MR.strings.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+            }
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+              removeUser(m, user, users, false, searchTextOrPassword.value.trim())
+            }
+            ) {
+              Text(stringResource(MR.strings.users_delete_data_only), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
             }
           }
-        )
-      } else {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.cant_delete_user_profile),
-          text = if (m.users.size > 1) {
-            generalGetString(MR.strings.should_be_at_least_one_visible_profile)
-          } else {
-            generalGetString(MR.strings.should_be_at_least_one_profile)
-          }
-        )
-      }
+        }
+      )
     },
     unhideUser = { user ->
       if (passwordEntryRequired(user, searchTextOrPassword.value)) {
         ModalManager.start.showModalCloseable(true) { close ->
           ProfileActionView(UserProfileAction.UNHIDE, user) { pwd ->
             withBGApi {
-              setUserPrivacy(m) { m.controller.apiUnhideUser(user.userId, pwd) }
+              setUserPrivacy(m) { m.controller.apiUnhideUser(user, pwd) }
               close()
             }
           }
         }
       } else {
-        withBGApi { setUserPrivacy(m) { m.controller.apiUnhideUser(user.userId, searchTextOrPassword.value.trim()) } }
+        withBGApi { setUserPrivacy(m) { m.controller.apiUnhideUser(user, searchTextOrPassword.value.trim()) } }
       }
     },
     muteUser = { user ->
       withBGApi {
         setUserPrivacy(m, onSuccess = {
           if (m.controller.appPrefs.showMuteProfileAlert.get()) showMuteProfileAlert(m.controller.appPrefs.showMuteProfileAlert)
-        }) { m.controller.apiMuteUser(user.userId) }
+        }) { m.controller.apiMuteUser(user) }
       }
     },
     unmuteUser = { user ->
-      withBGApi { setUserPrivacy(m) { m.controller.apiUnmuteUser(user.userId) } }
+      withBGApi { setUserPrivacy(m) { m.controller.apiUnmuteUser(user) } }
     },
     showHiddenProfile = { user ->
       ModalManager.start.showModalCloseable(true) { close ->
@@ -139,6 +137,9 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       }
     }
   )
+  KeyChangeEffect(remember { m.currentRemoteHost }.value) {
+    ModalManager.start.closeModal()
+  }
 }
 
 @Composable
@@ -170,11 +171,11 @@ private fun UserProfilesLayout(
       }
       SectionSpacer()
     }
-    AppBarTitle(stringResource(MR.strings.your_chat_profiles))
+    AppBarTitle(stringResource(MR.strings.your_chat_profiles), hostDevice(remember { chatModel.remoteHostId() }))
 
     SectionView {
       for (user in filteredUsers) {
-        UserView(user, users, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
+        UserView(user, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
         SectionDivider()
       }
       if (searchTextOrPassword.value.trim().isEmpty()) {
@@ -206,7 +207,6 @@ private fun UserProfilesLayout(
 @Composable
 private fun UserView(
   user: User,
-  users: List<User>,
   visibleUsersCount: Int,
   activateUser: (User) -> Unit,
   removeUser: (User) -> Unit,
@@ -216,7 +216,7 @@ private fun UserView(
   showHiddenProfile: (User) -> Unit,
 ) {
   val showMenu = remember { mutableStateOf(false) }
-  UserProfilePickerItem(user, onLongClick = { if (users.size > 1) showMenu.value = true }) {
+  UserProfilePickerItem(user, onLongClick = { showMenu.value = true }) {
     activateUser(user)
   }
   Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
@@ -346,22 +346,28 @@ private fun removeUser(m: ChatModel, user: User, users: List<User>, delSMPQueues
 }
 
 private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, delSMPQueues: Boolean, viewPwd: String?) {
-  if (users.size < 2) return
-
-  suspend fun deleteUser(user: User) {
-    m.controller.apiDeleteUser(user.userId, delSMPQueues, viewPwd)
-    m.removeUser(user)
-  }
   try {
-    if (user.activeUser) {
-      val newActive = users.firstOrNull { u -> !u.activeUser && !u.hidden }
-      if (newActive != null) {
-        m.controller.changeActiveUser_(newActive.userId, null)
-        deleteUser(user.copy(activeUser = false))
+    when {
+      user.activeUser -> {
+        val newActive = users.firstOrNull { u -> !u.activeUser && !u.hidden }
+        if (newActive != null) {
+          m.controller.changeActiveUser_(user.remoteHostId, newActive.userId, null)
+          m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
+        } else {
+          // Deleting the last visible user while having hidden one(s)
+          m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
+          m.controller.changeActiveUser_(user.remoteHostId, null, null)
+          if (appPlatform.isAndroid) {
+            controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+            ModalManager.closeAllModalsEverywhere()
+          }
+        }
       }
-    } else {
-      deleteUser(user)
+      else -> {
+        m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
+      }
     }
+    m.removeUser(user)
   } catch (e: Exception) {
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_user), e.stackTraceToString())
   }

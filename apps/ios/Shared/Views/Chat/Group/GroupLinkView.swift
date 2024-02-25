@@ -13,8 +13,12 @@ struct GroupLinkView: View {
     var groupId: Int64
     @Binding var groupLink: String?
     @Binding var groupLinkMemberRole: GroupMemberRole
+    var showTitle: Bool = false
+    var creatingGroup: Bool = false
+    var linkCreatedCb: (() -> Void)? = nil
     @State private var creatingLink = false
     @State private var alert: GroupLinkAlert?
+    @State private var shouldCreate = true
 
     private enum GroupLinkAlert: Identifiable {
         case deleteLink
@@ -29,10 +33,35 @@ struct GroupLinkView: View {
     }
 
     var body: some View {
+        if creatingGroup {
+            NavigationView {
+                groupLinkView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button ("Continue") { linkCreatedCb?() }
+                        }
+                    }
+            }
+        } else {
+            groupLinkView()
+        }
+    }
+
+    private func groupLinkView() -> some View {
         List {
-            Text("You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.")
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            Group {
+                if showTitle {
+                    Text("Group link")
+                        .font(.largeTitle)
+                        .bold()
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Text("You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.")
+            }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+
             Section {
                 if let groupLink = groupLink {
                     Picker("Initial role", selection: $groupLinkMemberRole) {
@@ -41,15 +70,18 @@ struct GroupLinkView: View {
                         }
                     }
                     .frame(height: 36)
-                    QRCode(uri: groupLink)
+                    SimpleXLinkQRCode(uri: groupLink)
+                        .id("simplex-qrcode-view-for-\(groupLink)")
                     Button {
-                        showShareSheet(items: [groupLink])
+                        showShareSheet(items: [simplexChatLink(groupLink)])
                     } label: {
                         Label("Share link", systemImage: "square.and.arrow.up")
                     }
 
-                    Button(role: .destructive) { alert = .deleteLink } label: {
-                        Label("Delete link", systemImage: "trash")
+                    if !creatingGroup {
+                        Button(role: .destructive) { alert = .deleteLink } label: {
+                            Label("Delete link", systemImage: "trash")
+                        }
                     }
                 } else {
                     Button(action: createGroupLink) {
@@ -95,9 +127,10 @@ struct GroupLinkView: View {
                 }
             }
             .onAppear {
-                if groupLink == nil && !creatingLink {
+                if groupLink == nil && !creatingLink && shouldCreate {
                     createGroupLink()
                 }
+                shouldCreate = false
             }
         }
     }

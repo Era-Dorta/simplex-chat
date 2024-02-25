@@ -1,6 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Bots.BroadcastTests where
@@ -13,10 +12,10 @@ import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (bracket)
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Core
-import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
+import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Types (Profile (..))
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 broadcastBotTests :: SpecWith FilePath
 broadcastBotTests = do
@@ -26,7 +25,7 @@ withBroadcastBot :: BroadcastBotOpts -> IO () -> IO ()
 withBroadcastBot opts test =
   bracket (forkIO bot) killThread (\_ -> threadDelay 500000 >> test)
   where
-    bot = simplexChatCore testCfg (mkChatOpts opts) Nothing $ broadcastBot opts
+    bot = simplexChatCore testCfg (mkChatOpts opts) $ broadcastBot opts
 
 broadcastBotProfile :: Profile
 broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadcast Bot", image = Nothing, contactLink = Nothing, preferences = Nothing}
@@ -34,7 +33,7 @@ broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadc
 mkBotOpts :: FilePath -> [KnownContact] -> BroadcastBotOpts
 mkBotOpts tmp publishers =
   BroadcastBotOpts
-    { coreOptions = testOpts.coreOptions {dbFilePrefix = tmp </> botDbPrefix},
+    { coreOptions = testCoreOpts {dbFilePrefix = tmp </> botDbPrefix},
       publishers,
       welcomeMessage = defaultWelcomeMessage publishers,
       prohibitedMessage = defaultWelcomeMessage publishers

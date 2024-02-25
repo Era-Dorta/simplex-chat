@@ -33,7 +33,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 
 @Composable
-fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, chatModel: ChatModel, close: () -> Unit) {
+fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolean = false, chatModel: ChatModel, close: () -> Unit) {
   val selectedContacts = remember { mutableStateListOf<Long>() }
   val selectedRole = remember { mutableStateOf(GroupMemberRole.Member) }
   var allowModifyMembers by remember { mutableStateOf(true) }
@@ -49,16 +49,16 @@ fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, ch
     searchText,
     openPreferences = {
       ModalManager.end.showCustomModal { close ->
-        GroupPreferencesView(chatModel, groupInfo.id, close)
+        GroupPreferencesView(chatModel, rhId, groupInfo.id, close)
       }
     },
     inviteMembers = {
       allowModifyMembers = false
-      withApi {
+      withLongRunningApi(slow = 120_000) {
         for (contactId in selectedContacts) {
-          val member = chatModel.controller.apiAddMember(groupInfo.groupId, contactId, selectedRole.value)
+          val member = chatModel.controller.apiAddMember(rhId, groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
-            chatModel.upsertGroupMember(groupInfo, member)
+            chatModel.upsertGroupMember(rhId, groupInfo, member)
           } else {
             break
           }
@@ -68,7 +68,7 @@ fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, ch
     },
     clearSelection = { selectedContacts.clear() },
     addContact = { contactId -> if (contactId !in selectedContacts) selectedContacts.add(contactId) },
-    removeContact = { contactId -> selectedContacts.removeIf { it == contactId } },
+    removeContact = { contactId -> selectedContacts.removeAll { it == contactId } },
     close = close,
   )
   KeyChangeEffect(chatModel.chatId.value) {
@@ -86,7 +86,7 @@ fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
     .map { it.chatInfo }
     .filterIsInstance<ChatInfo.Direct>()
     .map { it.contact }
-    .filter { it.contactId !in memberContactIds && it.chatViewName.lowercase().contains(s) }
+    .filter { c -> c.ready && c.active && c.contactId !in memberContactIds && c.chatViewName.lowercase().contains(s) }
     .sortedBy { it.displayName.lowercase() }
     .toList()
 }
@@ -205,7 +205,9 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    val values = GroupMemberRole.values().filter { it <= groupInfo.membership.memberRole }.map { it to it.text }
+    val values = GroupMemberRole.values()
+      .filter { it <= groupInfo.membership.memberRole && it != GroupMemberRole.Author }
+      .map { it to it.text }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.new_member_role),
       values,

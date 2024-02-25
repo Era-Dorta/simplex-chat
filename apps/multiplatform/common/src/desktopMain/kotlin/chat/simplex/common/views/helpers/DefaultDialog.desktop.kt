@@ -2,20 +2,19 @@ package chat.simplex.common.views.helpers
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.DialogParams
+import chat.simplex.common.platform.desktopPlatform
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.awt.FileDialog
 import java.io.File
-import java.util.*
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileFilter
 import javax.swing.filechooser.FileNameExtensionFilter
@@ -39,7 +38,8 @@ actual fun DefaultDialog(
   ) {
     Surface(
       Modifier
-        .border(border = BorderStroke(1.dp, MaterialTheme.colors.secondary.copy(alpha = 0.3F)), shape = RoundedCornerShape(8))
+        .border(border = BorderStroke(1.dp, MaterialTheme.colors.secondary.copy(alpha = 0.3F)), shape = RoundedCornerShape(8)),
+      contentColor = LocalContentColor.current
     ) {
       content()
     }
@@ -53,7 +53,7 @@ fun FrameWindowScope.FileDialogChooser(
   params: DialogParams,
   onResult: (result: List<File>) -> Unit
 ) {
-  if (isLinux()) {
+  if (desktopPlatform.isLinux() || desktopPlatform.isWindows()) {
     FileDialogChooserMultiple(title, isLoad, params.filename, params.allowMultiple, params.fileFilter, params.fileFilterDescription, onResult)
   } else {
     FileDialogAwt(title, isLoad, params.filename, params.allowMultiple, params.fileFilter, onResult)
@@ -121,7 +121,7 @@ fun FrameWindowScope.FileDialogChooserMultiple(
 }
 
 /*
-* Has graphic glitches on many Linux distributions, so use only on non-Linux systems
+* Has graphic glitches on many Linux distributions, so use only on non-Linux systems. Also file filter doesn't work on Windows
 * */
 @Composable
 private fun FrameWindowScope.FileDialogAwt(
@@ -159,5 +159,3 @@ private fun FrameWindowScope.FileDialogAwt(
   },
   dispose = FileDialog::dispose
 )
-
-fun isLinux(): Boolean = System.getProperty("os.name", "generic").lowercase(Locale.ENGLISH) == "linux"

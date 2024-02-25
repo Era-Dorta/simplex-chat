@@ -25,10 +25,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ClickableText
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.model.*
 import chat.simplex.common.views.helpers.annotatedStringResource
 import chat.simplex.res.MR
 
@@ -37,8 +37,9 @@ fun NetworkAndServersView(
   chatModel: ChatModel,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
 ) {
+  val currentRemoteHost by remember { chatModel.currentRemoteHost }
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
   val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(netCfg.useSocksProxy) }
@@ -46,12 +47,9 @@ fun NetworkAndServersView(
   val onionHosts = remember { mutableStateOf(netCfg.onionHosts) }
   val sessionMode = remember { mutableStateOf(netCfg.sessionMode) }
 
-  LaunchedEffect(Unit) {
-    chatModel.userSMPServersUnsaved.value = null
-  }
-
   val proxyPort = remember { derivedStateOf { chatModel.controller.appPrefs.networkProxyHostPort.state.value?.split(":")?.lastOrNull()?.toIntOrNull() ?: 9050 } }
   NetworkAndServersLayout(
+    currentRemoteHost = currentRemoteHost,
     developerTools = developerTools,
     networkUseSocksProxy = networkUseSocksProxy,
     onionHosts = onionHosts,
@@ -67,7 +65,7 @@ fun NetworkAndServersView(
           text = generalGetString(MR.strings.network_enable_socks_info).format(proxyPort.value),
           confirmText = generalGetString(MR.strings.confirm_verb),
           onConfirm = {
-            withApi {
+            withBGApi {
               val conf = NetCfg.proxyDefaults.withHostPort(chatModel.controller.appPrefs.networkProxyHostPort.get())
               chatModel.controller.apiSetNetworkConfig(conf)
               chatModel.controller.setNetCfg(conf)
@@ -82,7 +80,7 @@ fun NetworkAndServersView(
           text = generalGetString(MR.strings.network_disable_socks_info),
           confirmText = generalGetString(MR.strings.confirm_verb),
           onConfirm = {
-            withApi {
+            withBGApi {
               val conf = NetCfg.defaults
               chatModel.controller.apiSetNetworkConfig(conf)
               chatModel.controller.setNetCfg(conf)
@@ -109,7 +107,7 @@ fun NetworkAndServersView(
           onionHosts.value = prevValue
         }
       ) {
-        withApi {
+        withBGApi {
           val newCfg = chatModel.controller.getNetCfg().withOnionHosts(it)
           val res = chatModel.controller.apiSetNetworkConfig(newCfg)
           if (res) {
@@ -134,7 +132,7 @@ fun NetworkAndServersView(
         startsWith,
         onDismiss = { sessionMode.value = prevValue }
       ) {
-        withApi {
+        withBGApi {
           val newCfg = chatModel.controller.getNetCfg().copy(sessionMode = it)
           val res = chatModel.controller.apiSetNetworkConfig(newCfg)
           if (res) {
@@ -150,6 +148,7 @@ fun NetworkAndServersView(
 }
 
 @Composable fun NetworkAndServersLayout(
+  currentRemoteHost: RemoteHostInfo?,
   developerTools: Boolean,
   networkUseSocksProxy: MutableState<Boolean>,
   onionHosts: MutableState<OnionHosts>,
@@ -157,7 +156,7 @@ fun NetworkAndServersView(
   proxyPort: State<Int>,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   toggleSocksProxy: (Boolean) -> Unit,
   useOnion: (OnionHosts) -> Unit,
   updateSessionMode: (TransportSessionMode) -> Unit,
@@ -167,19 +166,23 @@ fun NetworkAndServersView(
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     AppBarTitle(stringResource(MR.strings.network_and_servers))
-    SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
-      SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.SMP, close) })
+    if (!chatModel.desktopNoUserNoRemote) {
+      SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
+        SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.SMP, close) })
 
-      SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.XFTP, close) })
+        SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.XFTP, close) })
 
-      UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
-      UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
-      if (developerTools) {
-        SessionModePicker(sessionMode, showSettingsModal, updateSessionMode)
+        if (currentRemoteHost == null) {
+          UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
+          UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
+          if (developerTools) {
+            SessionModePicker(sessionMode, showSettingsModal, updateSessionMode)
+          }
+          SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
+        }
       }
-      SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
     }
-    if (networkUseSocksProxy.value) {
+    if (currentRemoteHost == null && networkUseSocksProxy.value) {
       SectionCustomFooter {
         Column {
           Text(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
@@ -188,7 +191,7 @@ fun NetworkAndServersView(
         }
       }
       Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
-    } else {
+    } else if (!chatModel.desktopNoUserNoRemote) {
       Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 24.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
     }
 
@@ -298,7 +301,7 @@ fun SockProxySettings(m: ChatModel) {
         DefaultConfigurableTextField(
           hostUnsaved,
           stringResource(MR.strings.host_verb),
-          modifier = Modifier,
+          modifier = Modifier.fillMaxWidth(),
           isValid = ::validHost,
           keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
           keyboardType = KeyboardType.Text,
@@ -308,7 +311,7 @@ fun SockProxySettings(m: ChatModel) {
         DefaultConfigurableTextField(
           portUnsaved,
           stringResource(MR.strings.port_verb),
-          modifier = Modifier,
+          modifier = Modifier.fillMaxWidth(),
           isValid = ::validPort,
           keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done); save() }),
           keyboardType = KeyboardType.Number,
@@ -421,7 +424,7 @@ private fun validHost(s: String): Boolean {
 }
 
 // https://ihateregex.io/expr/port/
-private fun validPort(s: String): Boolean {
+fun validPort(s: String): Boolean {
   val validPort = Regex("^(6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4})$")
   return s.isNotBlank() && s.matches(validPort)
 }
@@ -448,6 +451,7 @@ private fun showUpdateNetworkSettingsDialog(
 fun PreviewNetworkAndServersLayout() {
   SimpleXTheme {
     NetworkAndServersLayout(
+      currentRemoteHost = null,
       developerTools = true,
       networkUseSocksProxy = remember { mutableStateOf(true) },
       proxyPort = remember { mutableStateOf(9050) },

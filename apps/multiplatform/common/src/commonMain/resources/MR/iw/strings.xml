@@ -93,7 +93,6 @@
     <string name="v4_2_auto_accept_contact_requests">אשר אוטומטית בקשות ליצירת קשר.</string>
     <string name="authentication_cancelled">אימות בוטל</string>
     <string name="auth_unavailable">אימות לא זמין</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>הוסיפו איש קשר חדש</b>: ליצירת קוד QR חד־פעמי עבור איש הקשר שלכם.]]></string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>הטוב ביותר לסוללה</b>. התראות יוצגו רק כאשר האפליקציה מופעלת (ללא שירות רקע).]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>טוב לסוללה</b>. שירות הרקע ייבדוק הודעות כל 10 דקות. שיחות או הודעות דחופות עלולות להתפספס.]]></string>
     <string name="both_you_and_your_contacts_can_delete">גם אתם וגם איש הקשר יכולים למחוק באופן בלתי הפיך הודעות שנשלחו.</string>
@@ -103,7 +102,6 @@
     <string name="cancel_verb">ביטול</string>
     <string name="icon_descr_cancel_live_message">בטל הודעה חיה</string>
     <string name="use_camera_button">מצלמה</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>סירקו קוד QR</b>: כדי להתחבר לאיש קשר המציג לכם קוד QR.]]></string>
     <string name="icon_descr_cancel_link_preview">בטל תצוגה מקדימה של קישורים</string>
     <string name="callstatus_error">שגיאת שיחה</string>
     <string name="callstatus_in_progress">שיחה מתמשכת</string>
@@ -114,7 +112,6 @@
     <string name="icon_descr_call_progress">שיחה מתמשכת</string>
     <string name="settings_section_title_calls">שיחות</string>
     <string name="cannot_access_keychain">לא ניתן לגשת ל־Keystore כדי לאחסן את סיסמת מסד הנתונים</string>
-    <string name="cant_delete_user_profile">לא ניתן למחוק פרופיל משתמש!</string>
     <string name="feature_cancelled_item">בוטל %s</string>
     <string name="v4_5_transport_isolation_descr">לפי פרופיל צ׳אט (ברירת מחדל) או לפי חיבור (בביטא).</string>
     <string name="callstatus_calling">מתקשר…</string>
@@ -219,7 +216,6 @@
     <string name="copied">הועתק ללוח</string>
     <string name="share_one_time_link">צור קישור הזמנה חד־פעמי</string>
     <string name="create_group">צור קבוצה סודית</string>
-    <string name="create_one_time_link">צור קישור הזמנה חד־פעמי</string>
     <string name="contribute">תרומה</string>
     <string name="core_version">גרסת ליבה: v%s</string>
     <string name="create_address">צור כתובת</string>
@@ -454,7 +450,6 @@
     <string name="for_everybody">עבור כולם</string>
     <string name="choose_file">קובץ</string>
     <string name="from_gallery_button">מתוך גלריה</string>
-    <string name="full_name_optional__prompt">שם מלא (אופציונלי)</string>
     <string name="files_and_media_section">קבצים ומדיה</string>
     <string name="group_member_status_group_deleted">קבוצה נמחקה</string>
     <string name="section_title_for_console">עבור מסוף הצ׳אט</string>
@@ -623,7 +618,6 @@
     <string name="markdown_in_messages">מרקדאון בהודעות</string>
     <string name="network_and_servers">רשת ושרתים</string>
     <string name="network_settings_title">הגדרות רשת</string>
-    <string name="no_spaces">בלי רווחים!</string>
     <string name="new_database_archive">ארכיון מסד נתונים חדש</string>
     <string name="messages_section_title">הודעות</string>
     <string name="group_member_role_member">חבר קבוצה</string>
@@ -677,7 +671,8 @@
     <string name="mark_code_verified">סמן מאומת</string>
     <string name="network_use_onion_hosts_no">לא</string>
     <string name="network_use_onion_hosts_prefer_desc">ייעשה שימוש במארחי Onion כאשר יהיו זמינים.</string>
-    <string name="network_use_onion_hosts_required_desc">מארחי Onion יידרשו לחיבור.</string>
+    <string name="network_use_onion_hosts_required_desc">יידרשו מארחי onion לחיבור.
+\nשימו לב: לא תוכלו להתחבר לשרתים ללא כתובת .onion.</string>
     <string name="network_use_onion_hosts_no_desc">לא ייעשה שימוש במארחי Onion.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">לא ייעשה שימוש במארחי Onion.</string>
     <string name="callstatus_missed">שיחה שלא נענתה</string>
@@ -1059,8 +1054,6 @@
     <string name="messages_section_description">הגדרה זו חלה על הודעות בפרופיל הצ׳אט הנוכחי שלך</string>
     <string name="database_backup_can_be_restored">הניסיון לשנות את סיסמת מסד הנתונים לא הושלם.</string>
     <string name="color_title">כותרת</string>
-    <string name="should_be_at_least_one_profile">נדרש לפחות פרופיל משתמש אחד.</string>
-    <string name="should_be_at_least_one_visible_profile">נדרש לפחות פרופיל משתמש אחד גלוי.</string>
     <string name="group_is_decentralized">הקבוצה מבוזרת לחלוטין - היא גלויה רק לחברי הקבוצה.</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">כדי לשמור על הפרטיות, במקום מזהי משתמש הקיימים בכל הפלטפורמות האחרות, ל־SimpleX יש מזהים לתורי הודעות, נפרדים עבור כל אחד מאנשי הקשר שלך.</string>
     <string name="using_simplex_chat_servers">משתמש בשרתי SimpleX Chatז</string>
@@ -1223,8 +1216,6 @@
 \nלא ניתן לבטל פעולה זו – הפרופיל, אנשי הקשר, ההודעות והקבצים שלך ייאבדו באופן בלתי הפיך.</string>
     <string name="your_current_profile">הפרופיל הנוכחי שלך</string>
     <string name="your_contacts_will_remain_connected">אנשי הקשר שלך יישארו מחוברים.</string>
-    <string name="your_contacts_will_see_it">אנשי הקשר שלך ב־SimpleX ייראו זאת.
-\nניתן לשנות זאת בהגדרות.</string>
     <string name="your_ice_servers">שרתי ה־ICE שלך</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">אתם תהיו מחוברים כאשר בקשת החיבור תאושר, אנא חכו או בידקו מאוחר יותר!</string>
     <string name="profile_will_be_sent_to_contact_sending_link">הפרופיל שלך יישלח לאיש הקשר ממנו קיבלת קישור זה.</string>
@@ -1377,4 +1368,35 @@
     <string name="system_restricted_background_in_call_warn"><![CDATA[כדי לבצע שיחות ברקע, בחר <b>שימוש בסוללה באפליקציה</b> / <b>ללא הגבלה</b> בהגדרות האפליקציה.]]></string>
     <string name="connect_via_member_address_alert_title">להתחבר ישירות\?</string>
     <string name="connect_via_member_address_alert_desc">בקשת חיבור תישלח לחבר קבוצה זה.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">מסד הנתונים יוצפן וביטוי הסיסמה יאוחסן בהגדרות.</string>
+    <string name="rcv_group_event_open_chat">פתח</string>
+    <string name="v5_3_encrypt_local_files">הצפנת קבצים ומדיה מאוחסנים</string>
+    <string name="error_creating_member_contact">שגיאה ביצירת איש קשר</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>שימו לב</b>: ממסרי הודעות וקבצים מחוברים דרך פרוקסי SOCKS. שיחות ושליחת תצוגות מקדימות של קישורים משתמשים בחיבור ישיר.]]></string>
+    <string name="encrypt_local_files">הצפין קבצים מקומיים</string>
+    <string name="v5_3_new_desktop_app">אפליקציית שולחן עבודה חדשה!</string>
+    <string name="v5_3_new_interface_languages">6 שפות ממשק חדשות</string>
+    <string name="v5_3_encrypt_local_files_descr">האפליקציה מצפינה קבצים מקומיים חדשים (למעט סרטונים).</string>
+    <string name="you_can_change_it_later">ביטוי סיסמה אקראי מאוחסן בהגדרות כטקסט רגיל.
+\nאתה יכול לשנות את זה מאוחר יותר.</string>
+    <string name="compose_send_direct_message_to_connect">שלח הודעה ישירה כדי להתחבר</string>
+    <string name="v5_3_discover_join_groups">גלה והצטרף לקבוצות</string>
+    <string name="database_encryption_will_be_updated_in_settings">ביטוי הסיסמה להצפנת מסד הנתונים יעודכן ויישמר בהגדרות.</string>
+    <string name="remove_passphrase_from_settings">להסיר את ביטוי הסיסמה מההגדרות\?</string>
+    <string name="use_random_passphrase">השתמש בביטוי סיסמה אקראי</string>
+    <string name="save_passphrase_in_settings">שמור את ביטוי הסיסמה בהגדרות</string>
+    <string name="v5_3_simpler_incognito_mode">מצב זהות נסתרת מפושט</string>
+    <string name="setup_database_passphrase">הגדרת סיסמת מסד נתונים</string>
+    <string name="set_database_passphrase">הגדר את ביטוי הסיסמה של מסד הנתונים</string>
+    <string name="open_database_folder">פתח את תיקיית מסד הנתונים</string>
+    <string name="v5_3_new_interface_languages_descr">ערבית, בולגרית, פינית, עברית, תאילנדית ואוקראינית - הודות למשתמשים ול-Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">צור פרופיל חדש באפליקציית שולחן העבודה. 💻</string>
+    <string name="passphrase_will_be_saved_in_settings">ביטוי הסיסמה יישמר בהגדרות כטקסט רגיל לאחר שתשנה אותו או תפעיל מחדש את האפליקציה.</string>
+    <string name="v5_3_simpler_incognito_mode_descr">החלף מצב זהות נסתרת בעת חיבור.</string>
+    <string name="v5_3_discover_join_groups_descr">- התחבר לשירות ספריות (ביטא)!
+\n- קבלות משלוח (עד 20 חברים).
+\n- מהיר ויציב יותר.</string>
+    <string name="settings_is_storing_in_clear_text">ביטוי הסיסמה מאוחסן בהגדרות כטקסט רגיל.</string>
+    <string name="member_contact_send_direct_message">שלח הודעה ישירה</string>
+    <string name="rcv_group_event_member_created_contact">מחובר ישירות</string>
 </resources>

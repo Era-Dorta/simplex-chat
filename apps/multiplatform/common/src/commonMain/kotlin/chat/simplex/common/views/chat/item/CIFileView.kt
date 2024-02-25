@@ -28,7 +28,7 @@ import java.net.URI
 fun CIFileView(
   file: CIFile?,
   edited: Boolean,
-  receiveFile: (Long, Boolean) -> Unit
+  receiveFile: (Long) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
 
@@ -68,11 +68,10 @@ fun CIFileView(
 
   fun fileAction() {
     if (file != null) {
-      when (file.fileStatus) {
-        is CIFileStatus.RcvInvitation -> {
+      when {
+        file.fileStatus is CIFileStatus.RcvInvitation -> {
           if (fileSizeValid()) {
-            val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
-            receiveFile(file.fileId, encrypted)
+            receiveFile(file.fileId)
           } else {
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.large_file),
@@ -80,7 +79,7 @@ fun CIFileView(
             )
           }
         }
-        is CIFileStatus.RcvAccepted ->
+        file.fileStatus is CIFileStatus.RcvAccepted ->
           when (file.fileProtocol) {
             FileProtocol.XFTP ->
               AlertManager.shared.showAlertMsg(
@@ -92,15 +91,22 @@ fun CIFileView(
                 generalGetString(MR.strings.waiting_for_file),
                 generalGetString(MR.strings.file_will_be_received_when_contact_is_online)
               )
+            FileProtocol.LOCAL -> {}
           }
-        is CIFileStatus.RcvComplete -> {
-          val filePath = getLoadedFilePath(file)
-          if (filePath != null) {
-            withApi {
-              saveFileLauncher.launch(file.fileName)
+        file.fileStatus is CIFileStatus.RcvComplete || (file.fileStatus is CIFileStatus.SndStored && file.fileProtocol == FileProtocol.LOCAL) -> {
+          withLongRunningApi(slow = 600_000) {
+            var filePath = getLoadedFilePath(file)
+            if (chatModel.connectedToRemote() && filePath == null) {
+              file.loadRemoteFile(true)
+              filePath = getLoadedFilePath(file)
             }
-          } else {
-            showToast(generalGetString(MR.strings.file_not_found))
+            if (filePath != null) {
+              withLongRunningApi {
+                saveFileLauncher.launch(file.fileName)
+              }
+            } else {
+              showToast(generalGetString(MR.strings.file_not_found))
+            }
           }
         }
         else -> {}
@@ -125,7 +131,8 @@ fun CIFileView(
     Surface(
       Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
       color = Color.Transparent,
-      shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
+      shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
+      contentColor = LocalContentColor.current
     ) {
       Box(Modifier.size(32.dp))
     }
@@ -146,11 +153,13 @@ fun CIFileView(
             when (file.fileProtocol) {
               FileProtocol.XFTP -> progressIndicator()
               FileProtocol.SMP -> fileIcon()
+              FileProtocol.LOCAL -> fileIcon()
             }
           is CIFileStatus.SndTransfer ->
             when (file.fileProtocol) {
               FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
               FileProtocol.SMP -> progressIndicator()
+              FileProtocol.LOCAL -> {}
             }
           is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
           is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
@@ -214,7 +223,13 @@ fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
     if (filePath != null && to != null) {
       if (ciFile?.fileSource?.cryptoArgs != null) {
         createTmpFileAndDelete { tmpFile ->
-          decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, tmpFile.absolutePath)
+          try {
+            decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, tmpFile.absolutePath)
+          } catch (e: Exception) {
+            Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
+            tmpFile.delete()
+            return@createTmpFileAndDelete
+          }
           copyFileToFile(tmpFile, to) {}
           tmpFile.delete()
         }

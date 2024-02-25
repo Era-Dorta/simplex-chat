@@ -37,12 +37,12 @@
     "hero-overlay-2-title": "Why user IDs are bad for privacy?",
     "hero-overlay-3-title": "Security assessment",
     "feature-1-title": "E2E-encrypted messages with markdown and editing",
-    "feature-2-title": "E2E-encrypted<br>images and files",
-    "feature-3-title": "Decentralized secret groups &mdash;<br>only users know they exist",
+    "feature-2-title": "E2E-encrypted<br>images, videos and files",
+    "feature-3-title": "E2E-encrypted decentralized groups &mdash; only users know they exist",
     "feature-4-title": "E2E-encrypted voice messages",
     "feature-5-title": "Disappearing messages",
     "feature-6-title": "E2E-encrypted<br>audio and video calls",
-    "feature-7-title": "Portable encrypted database &mdash; move your profile to another device",
+    "feature-7-title": "Portable encrypted app storage &mdash; move profile to another device",
     "feature-8-title": "Incognito mode &mdash;<br>unique to SimpleX Chat",
     "simplex-network-overlay-1-title": "Comparison with P2P messaging protocols",
     "simplex-private-1-title": "2-layers of<br>end-to-end encryption",
@@ -250,5 +250,7 @@
     "stable-versions-built-by-f-droid-org": "Stable versions built by F-Droid.org",
     "releases-to-this-repo-are-done-1-2-days-later": "The releases to this repo are done 1-2 days later",
     "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat and F-Droid.org repositories sign builds with the different keys. To switch, please <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>export</a> the chat database and re-install the app.",
-    "jobs": "Join team"
+    "jobs": "Join team",
+    "please-enable-javascript": "Please enable JavaScript to see the QR code.",
+    "please-use-link-in-mobile-app": "Please use the link in the mobile app"
 }

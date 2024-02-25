@@ -104,7 +104,7 @@ struct ComposeState {
 
     var sendEnabled: Bool {
         switch preview {
-        case .mediaPreviews: return true
+        case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
         case .filePreview: return true
         default: return !message.isEmpty || liveMessage != nil
@@ -295,7 +295,7 @@ struct ComposeView: View {
                             sendMessage(ttl: ttl)
                             resetLinkPreview()
                         },
-                        sendLiveMessage: sendLiveMessage,
+                        sendLiveMessage: chat.chatInfo.chatType != .local ? sendLiveMessage : nil,
                         updateLiveMessage: updateLiveMessage,
                         cancelLiveMessage: {
                             composeState.liveMessage = nil
@@ -384,10 +384,10 @@ struct ComposeView: View {
             }
         }
         .sheet(isPresented: $showMediaPicker) {
-            LibraryMediaListPicker(media: $chosenMedia, selectionLimit: 10) { itemsSelected in
-                showMediaPicker = false
-                if itemsSelected {
-                    DispatchQueue.main.async {
+            LibraryMediaListPicker(addMedia: addMediaContent, selectionLimit: 10, finishedPreprocessing: finishedPreprocessingMediaContent) { itemsSelected in
+                await MainActor.run {
+                    showMediaPicker = false
+                    if itemsSelected {
                         composeState = composeState.copy(preview: .mediaPreviews(mediaPreviews: []))
                     }
                 }
@@ -484,6 +484,30 @@ struct ComposeView: View {
         .onAppear {
             if case let .voicePreview(_, duration) = composeState.preview {
                 voiceMessageRecordingTime = TimeInterval(duration)
+            }
+        }
+    }
+
+    private func addMediaContent(_ content: UploadContent) async {
+        if let img = resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
+            var newMedia: [(String, UploadContent?)] = []
+            if case var .mediaPreviews(media) = composeState.preview {
+                media.append((img, content))
+                newMedia = media
+            } else {
+                newMedia = [(img, content)]
+            }
+            await MainActor.run {
+                composeState = composeState.copy(preview: .mediaPreviews(mediaPreviews: newMedia))
+            }
+        }
+    }
+
+    // When error occurs while converting video, remove media preview
+    private func finishedPreprocessingMediaContent() {
+        if case let .mediaPreviews(media) = composeState.preview, media.isEmpty {
+            DispatchQueue.main.async {
+                composeState = composeState.copy(preview: .noPreview)
             }
         }
     }
@@ -592,12 +616,14 @@ struct ComposeView: View {
             EmptyView()
         case let .quotedItem(chatItem: quotedItem):
             ContextItemView(
+                chat: chat,
                 contextItem: quotedItem,
                 contextIcon: "arrowshape.turn.up.left",
                 cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
             )
         case let .editingItem(chatItem: editingItem):
             ContextItemView(
+                chat: chat,
                 contextItem: editingItem,
                 contextIcon: "pencil",
                 cancelContextItem: { clearState() }
@@ -663,7 +689,7 @@ struct ComposeView: View {
                 let file = voiceCryptoFile(recordingFileName)
                 sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl)
             case let .filePreview(_, file):
-                if let savedFile = saveFileFromURL(file, encrypted: privacyEncryptLocalFilesGroupDefault.get()) {
+                if let savedFile = saveFileFromURL(file) {
                     sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl)
                 }
             }
@@ -766,15 +792,17 @@ struct ComposeView: View {
         }
 
         func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
-            if let chatItem = await apiSendMessage(
-                type: chat.chatInfo.chatType,
-                id: chat.chatInfo.apiId,
-                file: file,
-                quotedItemId: quoted,
-                msg: mc,
-                live: live,
-                ttl: ttl
-            ) {
+            if let chatItem = chat.chatInfo.chatType == .local
+                ? await apiCreateChatItem(noteFolderId: chat.chatInfo.apiId, file: file, msg: mc)
+                : await apiSendMessage(
+                    type: chat.chatInfo.chatType,
+                    id: chat.chatInfo.apiId,
+                    file: file,
+                    quotedItemId: quoted,
+                    msg: mc,
+                    live: live,
+                    ttl: ttl
+                ) {
                 await MainActor.run {
                     chatModel.removeLiveDummy(animated: false)
                     chatModel.addChatItem(chat.chatInfo, chatItem)
@@ -950,6 +978,9 @@ struct ComposeView: View {
     }
 
     private func cancelLinkPreview() {
+        if let pendingLink = pendingLinkUrl?.absoluteString {
+            cancelledLinks.insert(pendingLink)
+        }
         if let uri = composeState.linkPreview?.uri.absoluteString {
             cancelledLinks.insert(uri)
         }

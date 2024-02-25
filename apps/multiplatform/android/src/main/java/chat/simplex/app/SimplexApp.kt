@@ -1,7 +1,11 @@
 package chat.simplex.app
 
 import android.app.Application
+import android.content.Context
+import androidx.compose.ui.platform.ClipboardManager
 import chat.simplex.common.platform.Log
+import android.app.UiModeManager
+import android.os.*
 import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.NtfManager
@@ -9,12 +13,16 @@ import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.requiresIgnoringBattery
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatModel.updatingChatsMutex
+import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.ui.theme.DefaultTheme
+import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.common.platform.*
-import chat.simplex.common.views.call.RcvCallInvitation
 import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.withLock
 import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -30,7 +38,24 @@ class SimplexApp: Application(), LifecycleEventObserver {
   override fun onCreate() {
     super.onCreate()
     if (ProcessPhoenix.isPhoenixProcess(this)) {
-      return;
+      return
+    } else {
+      registerGlobalErrorHandler()
+      Handler(Looper.getMainLooper()).post {
+        while (true) {
+          try {
+            Looper.loop()
+          } catch (e: Throwable) {
+            if (e is UnsatisfiedLinkError || e.message?.startsWith("Unable to start activity") == true) {
+              Process.killProcess(Process.myPid())
+              break
+            } else {
+              // Send it to our exception handled because it will not get the exception otherwise
+              Thread.getDefaultUncaughtExceptionHandler()?.uncaughtException(Looper.getMainLooper().thread, e)
+            }
+          }
+        }
+      }
     }
     context = this
     initHaskell()
@@ -38,40 +63,41 @@ class SimplexApp: Application(), LifecycleEventObserver {
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
 
-    withBGApi {
-      initChatController()
-      runMigrations()
+    if (DatabaseUtils.ksSelfDestructPassword.get() == null) {
+      initChatControllerAndRunMigrations()
     }
     ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
   }
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
     Log.d(TAG, "onStateChanged: $event")
-    withApi {
+    withLongRunningApi {
       when (event) {
         Lifecycle.Event.ON_START -> {
           isAppOnForeground = true
           if (chatModel.chatRunning.value == true) {
-            kotlin.runCatching {
-              val currentUserId = chatModel.currentUser.value?.userId
-              val chats = ArrayList(chatController.apiGetChats())
-              /** Active user can be changed in background while [ChatController.apiGetChats] is executing */
-              if (chatModel.currentUser.value?.userId == currentUserId) {
-                val currentChatId = chatModel.chatId.value
-                val oldStats = if (currentChatId != null) chatModel.getChat(currentChatId)?.chatStats else null
-                if (oldStats != null) {
-                  val indexOfCurrentChat = chats.indexOfFirst { it.id == currentChatId }
-                  /** Pass old chatStats because unreadCounter can be changed already while [ChatController.apiGetChats] is executing */
-                  if (indexOfCurrentChat >= 0) chats[indexOfCurrentChat] = chats[indexOfCurrentChat].copy(chatStats = oldStats)
+            updatingChatsMutex.withLock {
+              kotlin.runCatching {
+                val currentUserId = chatModel.currentUser.value?.userId
+                val chats = ArrayList(chatController.apiGetChats(chatModel.remoteHostId()))
+                /** Active user can be changed in background while [ChatController.apiGetChats] is executing */
+                if (chatModel.currentUser.value?.userId == currentUserId) {
+                  val currentChatId = chatModel.chatId.value
+                  val oldStats = if (currentChatId != null) chatModel.getChat(currentChatId)?.chatStats else null
+                  if (oldStats != null) {
+                    val indexOfCurrentChat = chats.indexOfFirst { it.id == currentChatId }
+                    /** Pass old chatStats because unreadCounter can be changed already while [ChatController.apiGetChats] is executing */
+                    if (indexOfCurrentChat >= 0) chats[indexOfCurrentChat] = chats[indexOfCurrentChat].copy(chatStats = oldStats)
+                  }
+                  chatModel.updateChats(chats)
                 }
-                chatModel.updateChats(chats)
-              }
-            }.onFailure { Log.e(TAG, it.stackTraceToString()) }
+              }.onFailure { Log.e(TAG, it.stackTraceToString()) }
+            }
           }
         }
         Lifecycle.Event.ON_RESUME -> {
           isAppOnForeground = true
-          if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
+          if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete && chatModel.currentUser.value != null) {
             SimplexService.showBackgroundServiceNoticeIfNeeded()
           }
           /**
@@ -140,13 +166,14 @@ class SimplexApp: Application(), LifecycleEventObserver {
     androidAppContext = this
     APPLICATION_ID = BuildConfig.APPLICATION_ID
     ntfManager = object : chat.simplex.common.platform.NtfManager() {
-      override fun notifyCallInvitation(invitation: RcvCallInvitation) = NtfManager.notifyCallInvitation(invitation)
+      override fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean = NtfManager.notifyCallInvitation(invitation)
       override fun hasNotificationsForChat(chatId: String): Boolean = NtfManager.hasNotificationsForChat(chatId)
       override fun cancelNotificationsForChat(chatId: String) = NtfManager.cancelNotificationsForChat(chatId)
       override fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions.map { it.first })
       override fun androidCreateNtfChannelsMaybeShowAlert() = NtfManager.createNtfChannelsMaybeShowAlert()
       override fun cancelCallNotification() = NtfManager.cancelCallNotification()
       override fun cancelAllNotifications() = NtfManager.cancelAllNotifications()
+      override fun showMessage(title: String, text: String) = NtfManager.showMessage(title, text)
     }
     platform = object : PlatformInterface {
       override suspend fun androidServiceStart() {
@@ -163,10 +190,18 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
         CoroutineScope(Dispatchers.Default).launch {
-          if (mode == NotificationsMode.SERVICE)
+          if (mode == NotificationsMode.SERVICE) {
             SimplexService.start()
-          else
+            // Sometimes, when we change modes fast from one to another, system destroys the service after start.
+            // We can wait a little and restart the service, and it will work in 100% of cases
+            delay(2000)
+            if (!SimplexService.isServiceStarted && appPrefs.notificationsMode.get() == NotificationsMode.SERVICE) {
+              Log.i(TAG, "Service tried to start but destroyed by system, repeating once more")
+              SimplexService.start()
+            }
+          } else {
             SimplexService.safeStopService()
+          }
         }
 
         if (mode != NotificationsMode.PERIODIC) {
@@ -201,6 +236,23 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
 
       override fun androidIsBackgroundCallAllowed(): Boolean = !SimplexService.isBackgroundRestricted()
+
+      override fun androidSetNightModeIfSupported() {
+        if (Build.VERSION.SDK_INT < 31) return
+
+        val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM.name) {
+          null
+        } else {
+          CurrentColors.value.colors.isLight
+        }
+        val mode = when (light) {
+          null -> UiModeManager.MODE_NIGHT_AUTO
+          true -> UiModeManager.MODE_NIGHT_NO
+          false -> UiModeManager.MODE_NIGHT_YES
+        }
+        val uiModeManager = androidAppContext.getSystemService(UI_MODE_SERVICE) as UiModeManager
+        uiModeManager.setApplicationNightMode(mode)
+      }
 
       override suspend fun androidAskToAllowBackgroundCalls(): Boolean {
         if (SimplexService.isBackgroundRestricted()) {

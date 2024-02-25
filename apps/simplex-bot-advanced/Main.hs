@@ -25,7 +25,7 @@ import System.Directory (getAppUserDataDirectory)
 main :: IO ()
 main = do
   opts <- welcomeGetOpts
-  simplexChatCore terminalChatConfig opts Nothing myPingBot
+  simplexChatCore terminalChatConfig opts myPingBot
 
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
@@ -53,7 +53,7 @@ myPingBot _user cc = do
               && not (connDisabled conn)
     r -> putStrLn $ "Error getting contacts list: " <> show r
   race_ (forever $ void getLine) . forever $ do
-    (_, resp) <- atomically . readTBQueue $ outputQ cc
+    (_, _, resp) <- atomically . readTBQueue $ outputQ cc
     case resp of
       CRContactConnected _ ct _ -> do
         contactConnected ct

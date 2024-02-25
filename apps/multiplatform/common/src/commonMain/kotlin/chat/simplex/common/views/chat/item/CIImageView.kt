@@ -22,6 +22,9 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_MAX_IMAGE_WIDTH
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.net.URI
 
@@ -29,11 +32,10 @@ import java.net.URI
 fun CIImageView(
   image: String,
   file: CIFile?,
-  encryptLocalFile: Boolean,
   metaColor: Color,
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
-  receiveFile: (Long, Boolean) -> Unit
+  receiveFile: (Long) -> Unit
 ) {
   @Composable
   fun progressIndicator() {
@@ -68,6 +70,7 @@ fun CIImageView(
             when (file.fileProtocol) {
               FileProtocol.XFTP -> progressIndicator()
               FileProtocol.SMP -> {}
+              FileProtocol.LOCAL -> {}
             }
           is CIFileStatus.SndTransfer -> progressIndicator()
           is CIFileStatus.SndComplete -> fileIcon(painterResource(MR.images.ic_check_filled), MR.strings.icon_descr_image_snd_complete)
@@ -134,7 +137,7 @@ fun CIImageView(
     return false
   }
 
-  fun imageAndFilePath(file: CIFile?): Triple<ImageBitmap, ByteArray, String>? {
+  suspend fun imageAndFilePath(file: CIFile?): Triple<ImageBitmap, ByteArray, String>? {
     val res = getLoadedImage(file)
     if (res != null) {
       val (imageBitmap: ImageBitmap, data: ByteArray) = res
@@ -148,9 +151,29 @@ fun CIImageView(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID),
     contentAlignment = Alignment.TopEnd
   ) {
-    val res = remember(file) { imageAndFilePath(file) }
-    if (res != null) {
-      val (imageBitmap, data, _) = res
+    val res: MutableState<Triple<ImageBitmap, ByteArray, String>?> = remember {
+      mutableStateOf(
+        if (chatModel.connectedToRemote()) null else runBlocking { imageAndFilePath(file) }
+      )
+    }
+    if (chatModel.connectedToRemote()) {
+      LaunchedEffect(file, CIFile.cachedRemoteFileRequests.toList()) {
+        withBGApi {
+          if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
+            res.value = imageAndFilePath(file)
+          }
+        }
+      }
+    } else {
+      KeyChangeEffect(file) {
+        if (res.value == null) {
+          res.value = imageAndFilePath(file)
+        }
+      }
+    }
+    val loaded = res.value
+    if (loaded != null) {
+      val (imageBitmap, data, _) = loaded
       SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, @Composable { painter, onClick -> ImageView(painter, onClick) })
     } else {
       imageView(base64ToBitmap(image), onClick = {
@@ -158,7 +181,7 @@ fun CIImageView(
           when (file.fileStatus) {
             CIFileStatus.RcvInvitation ->
               if (fileSizeValid()) {
-                receiveFile(file.fileId, encryptLocalFile)
+                receiveFile(file.fileId)
               } else {
                 AlertManager.shared.showAlertMsg(
                   generalGetString(MR.strings.large_file),
@@ -177,6 +200,7 @@ fun CIImageView(
                     generalGetString(MR.strings.waiting_for_image),
                     generalGetString(MR.strings.image_will_be_received_when_contact_is_online)
                   )
+                FileProtocol.LOCAL -> {}
               }
             CIFileStatus.RcvTransfer(rcvProgress = 7, rcvTotal = 10) -> {} // ?
             CIFileStatus.RcvComplete -> {} // ?

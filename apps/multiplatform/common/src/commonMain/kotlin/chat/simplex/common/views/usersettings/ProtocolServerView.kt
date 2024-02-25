@@ -28,21 +28,19 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.common.model.ChatModel
 import chat.simplex.res.MR
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 
 @Composable
 fun ProtocolServerView(m: ChatModel, server: ServerCfg, serverProtocol: ServerProtocol, onUpdate: (ServerCfg) -> Unit, onDelete: () -> Unit) {
   var testing by remember { mutableStateOf(false) }
-  val scope = rememberCoroutineScope()
   ProtocolServerLayout(
     testing,
     server,
     serverProtocol,
     testServer = {
       testing = true
-      scope.launch {
+      withLongRunningApi {
         val res = testServerConnection(server, m)
         if (isActive) {
           onUpdate(res.first)
@@ -160,7 +158,7 @@ private fun CustomServer(
   if (valid.value) {
     SectionDividerSpaced()
     SectionView(stringResource(MR.strings.smp_servers_add_to_another_device).uppercase()) {
-      QRCode(serverAddress.value, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
+      QRCode(serverAddress.value)
     }
   }
 }
@@ -197,7 +195,7 @@ fun ShowTestStatus(server: ServerCfg, modifier: Modifier = Modifier) =
 
 suspend fun testServerConnection(server: ServerCfg, m: ChatModel): Pair<ServerCfg, ProtocolTestFailure?> =
   try {
-    val r = m.controller.testProtoServer(server.server)
+    val r = m.controller.testProtoServer(server.remoteHostId, server.server)
     server.copy(tested = r == null) to r
   } catch (e: Exception) {
     Log.e(TAG, "testServerConnection ${e.stackTraceToString()}")

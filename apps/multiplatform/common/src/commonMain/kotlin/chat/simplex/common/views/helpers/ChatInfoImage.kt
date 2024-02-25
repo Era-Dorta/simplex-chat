@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.platform.base64ToBitmap
+import chat.simplex.common.ui.theme.NoteFolderIconColor
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -24,9 +25,12 @@ import dev.icerock.moko.resources.ImageResource
 @Composable
 fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
   val icon =
-    if (chatInfo is ChatInfo.Group) MR.images.ic_supervised_user_circle_filled
-    else MR.images.ic_account_circle_filled
-  ProfileImage(size, chatInfo.image, icon, iconColor)
+    when (chatInfo) {
+      is ChatInfo.Group -> MR.images.ic_supervised_user_circle_filled
+      is ChatInfo.Local -> MR.images.ic_folder_filled
+      else -> MR.images.ic_account_circle_filled
+    }
+  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)
 }
 
 @Composable
@@ -78,6 +82,35 @@ fun ProfileImage(
         modifier = Modifier.size(size).padding(size / 12).clip(CircleShape)
       )
     }
+  }
+}
+
+/** [AccountCircleFilled] has its inner padding which leads to visible border if there is background underneath.
+ * This is workaround
+ * */
+@Composable
+fun ProfileImageForActiveCall(
+  size: Dp,
+  image: String? = null,
+  color: Color = MaterialTheme.colors.secondaryVariant,
+) {
+  if (image == null) {
+    Box(Modifier.requiredSize(size).clip(CircleShape)) {
+      Icon(
+        AccountCircleFilled,
+        contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
+        tint = color,
+        modifier = Modifier.requiredSize(size + 14.dp)
+      )
+    }
+  } else {
+    val imageBitmap = base64ToBitmap(image)
+    Image(
+      imageBitmap,
+      stringResource(MR.strings.image_descr_profile_image),
+      contentScale = ContentScale.Crop,
+      modifier = Modifier.size(size).clip(CircleShape)
+    )
   }
 }
 

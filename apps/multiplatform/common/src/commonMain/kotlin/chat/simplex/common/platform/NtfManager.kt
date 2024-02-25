@@ -49,27 +49,34 @@ abstract class NtfManager {
       null
     }
     val apiId = chatId.replace("<@", "").toLongOrNull() ?: return
-    acceptContactRequest(incognito, apiId, cInfo, isCurrentUser, ChatModel)
+    // TODO include remote host in notification
+    acceptContactRequest(null, incognito, apiId, cInfo, isCurrentUser, ChatModel)
     cancelNotificationsForChat(chatId)
   }
 
   fun openChatAction(userId: Long?, chatId: ChatId) {
-    withBGApi {
+    withLongRunningApi {
       awaitChatStartedIfNeeded(chatModel)
       if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
-        chatModel.controller.changeActiveUser(userId, null)
+        // TODO include remote host ID in desktop notifications?
+        chatModel.controller.showProgressIfNeeded {
+          chatModel.controller.changeActiveUser(null, userId, null)
+        }
       }
       val cInfo = chatModel.getChat(chatId)?.chatInfo
       chatModel.clearOverlays.value = true
-      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(cInfo, chatModel)
+      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(null, cInfo, chatModel)
     }
   }
 
   fun showChatsAction(userId: Long?) {
-    withBGApi {
+    withLongRunningApi {
       awaitChatStartedIfNeeded(chatModel)
       if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
-        chatModel.controller.changeActiveUser(userId, null)
+        // TODO include remote host ID in desktop notifications?
+        chatModel.controller.showProgressIfNeeded {
+          chatModel.controller.changeActiveUser(null, userId, null)
+        }
       }
       chatModel.chatId.value = null
       chatModel.clearOverlays.value = true
@@ -86,12 +93,13 @@ abstract class NtfManager {
     }
   }
 
-  abstract fun notifyCallInvitation(invitation: RcvCallInvitation)
+  abstract fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean
   abstract fun hasNotificationsForChat(chatId: String): Boolean
   abstract fun cancelNotificationsForChat(chatId: String)
   abstract fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<Pair<NotificationAction, () -> Unit>> = emptyList())
   abstract fun cancelCallNotification()
   abstract fun cancelAllNotifications()
+  abstract fun showMessage(title: String, text: String)
   // Android only
   abstract fun androidCreateNtfChannelsMaybeShowAlert()
 

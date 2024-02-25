@@ -61,7 +61,7 @@ struct ContactConnectionInfo: View {
 
                     if contactConnection.initiated,
                        let connReqInv = contactConnection.connReqInv {
-                        QRCode(uri: connReqInv)
+                        SimpleXLinkQRCode(uri: simplexChatLink(connReqInv))
                         incognitoEnabled()
                         shareLinkButton(connReqInv)
                         oneTimeLinkLearnMoreButton()
@@ -119,7 +119,7 @@ struct ContactConnectionInfo: View {
                 if let conn = try await apiSetConnectionAlias(connId: contactConnection.pccConnId, localAlias: localAlias) {
                     await MainActor.run {
                         contactConnection = conn
-                        ChatModel.shared.updateContactConnection(conn)
+                        m.updateContactConnection(conn)
                         dismiss()
                     }
                 }
@@ -160,6 +160,28 @@ struct ContactConnectionInfo: View {
             .sheet(isPresented: $showIncognitoSheet) {
                 IncognitoHelp()
             }
+        }
+    }
+}
+
+private func shareLinkButton(_ connReqInvitation: String) -> some View {
+    Button {
+        showShareSheet(items: [simplexChatLink(connReqInvitation)])
+    } label: {
+        settingsRow("square.and.arrow.up") {
+            Text("Share 1-time link")
+        }
+    }
+}
+
+private func oneTimeLinkLearnMoreButton() -> some View {
+    NavigationLink {
+        AddContactLearnMore(showTitle: false)
+            .navigationTitle("One-time invitation link")
+            .navigationBarTitleDisplayMode(.large)
+    } label: {
+        settingsRow("info.circle") {
+            Text("Learn more")
         }
     }
 }

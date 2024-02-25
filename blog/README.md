@@ -1,5 +1,42 @@
 # Blog
 
+Jan 24, 2024 [SimpleX Chat: free infrastructure from Linode, v5.5 released](./20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.md)
+
+SimpleX Chat infrastructure on Linode:
+- Free infrastructure.
+- SimpleX servers in Linode Marketplace.
+- High capacity messaging servers.
+
+What's new in v5.5:
+- private notes.
+- group history.
+- simpler UX to connect to other users.
+- message delivery stability and other improvements.
+
+---
+
+Nov 25, 2023 [SimpleX Chat v5.4 released](./20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md)
+
+- Link mobile and desktop apps via secure quantum-resistant protocol. 🔗
+- Better groups:
+  - faster to join and more reliable.
+  - create groups with incognito profile.
+  - block group members to reduce noise.
+  - prohibit files and media in a group.
+- Better calls: faster to connect, with screen sharing on desktop.
+- Many other improvements.
+
+---
+
+Sep 25, 2023 [SimpleX Chat v5.3 released](./20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.md)
+
+- new desktop app! 💻
+- directory service and other group improvements.
+- encrypted local files and media with forward secrecy.
+- simplified incognito mode.
+
+---
+
 July 22, 2023 [SimpleX Chat v5.2 released](./20230722-simplex-chat-v5-2-message-delivery-receipts.md)
 
 **What's new in v5.2:**
@@ -109,7 +146,7 @@ November reviews:
 - [Privacy Guides](https://www.privacyguides.org/real-time-communication/#simplex-chat) recommendations.
 - [Review by Mike Kuketz](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/).
 - [The messenger matrix](https://www.messenger-matrix.de).
-- [Supernova review](https://supernova.tilde.team/detailed_reviews.html#simplex) and [messenger ratings](https://supernova.tilde.team/messengers.html).
+- [Supernova review](https://supernovas.space/detailed_reviews.html#simplex) and [messenger ratings](https://supernovas.space/messengers.html).
 
 ---
 
