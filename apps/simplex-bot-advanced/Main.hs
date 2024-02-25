@@ -15,8 +15,6 @@ import qualified Data.Text as T
 import Simplex.Chat.Bot
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
-import Simplex.Chat.Messages
-import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Types
@@ -48,7 +46,8 @@ myPingBot _user cc = do
         let cts' = filter broadcastTo cts
         forM_ cts' $ \ct' -> sendMessage cc ct' "Ping"
         where
-          broadcastTo _ct'@Contact {activeConn = conn@Connection {connStatus}} =
+          broadcastTo Contact {activeConn = Nothing} = False
+          broadcastTo _ct'@Contact {activeConn = Just conn@Connection {connStatus}} =
             (connStatus == ConnSndReady || connStatus == ConnReady)
               && not (connDisabled conn)
     r -> putStrLn $ "Error getting contacts list: " <> show r
